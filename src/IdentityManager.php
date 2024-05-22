@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Seablast/Auth;
+namespace Seablast\Auth;
 
 use DateTime;
-use Seablast\Seablast\IdentityManagerInterface;
+use Seablast\Interfaces\IdentityManagerInterface;
 use Tracy\Debugger;
+use Webmozart\Assert\Assert;
 
 /**
- * MIT License
-
- TODO add `
- Todo replace p_ by prefix
+ * IdentityManager class manages user authentication and session handling.
+ * Uses MySQLi for database access.
  *
  * Call setTablePrefix injection, if prefix is used.
  *
@@ -25,29 +24,31 @@ class IdentityManager implements IdentityManagerInterface
 {
     use \Nette\SmartObject;
 
-    /** @var string */
+    /** @var string Cookie domain. */
     private $cookieDomain;
-    /** @var string */
+    /** @var string Path for cookies. */
     private $cookiePath;
-    /** @var \mysqli */
+    /** @var \mysqli Database connection. */
     private $dbms;
-    /** @var string */
+    /** @var string User email. */
     private $email;
-    /** @var bool */
+    /** @var bool Authentication status. */
     private $isAuthenticated = false;
-    /** @var ?bool whether the user trying to authenticate is a new user */
+    /** @var ?bool Flag indicating if the user trying to authenticate is a new user. */
     private $isNewUser = null;
-    /** @var int */
+    /** @var int Role ID of the user. */
     private $roleId;
-    /** @var string */
+    /** @var string Table prefix for SQL queries. */
     private $tablePrefix = '';
-    /** @var string */
+    /** @var string Token for session management. */
     private $token;
-    /** @var int */
+    /** @var int User ID. */
     private $userId;
 
     /**
-     * @param \mysqli $dbms
+     * Constructor for IdentityManager.
+     *
+     * @param \mysqli $dbms Database management system to use.
      */
     public function __construct(\mysqli $dbms)
     {
@@ -57,18 +58,21 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
+     * Creates a session ID and a remember me token.
+     *
      * TODO consider insert also type (short session, long remember me) for selective purge
-     * @param int $userId
-     * @return void
+     *
+     * @param int $userId The user's ID.
      */
     private function createSessionId(int $userId): void
     {
         // insert uniqid to the sessionId field and userId into userId field of the session_user table
         $sessionId = uniqid('', true); // todo maybe also generateToken()???
         $rememberMeToken = $this->generateToken();
-        $this->dbms->query('INSERT INTO ' . $this->tablePrefix . 'session_user (user_id, token, updated) VALUES (' . (int) $userId
-            . ', "' . (string) $sessionId . '", CURRENT_TIMESTAMP), (' . (int) $userId
-            . ', "' . (string) $rememberMeToken . '", CURRENT_TIMESTAMP);'); // todo assert insert doesn't fail
+        $this->dbms->query("INSERT INTO `{$this->tablePrefix}session_user` (user_id, token, updated) VALUES ("
+            . (int) $userId . ", '" . $sessionId . "', CURRENT_TIMESTAMP), (" . (int) $userId
+            . ", '" . $rememberMeToken . "', CURRENT_TIMESTAMP);");
+        // todo assert insert doesn't fail
         $_SESSION['sbSessionToken'] = $sessionId;
         // todo if not flag allow Remember Me; then return;
         // Create relogin cookie which expires in 30 days
@@ -87,64 +91,63 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Check whether RememberMe cookie fits.
+     * Checks if the Remember Me cookie matches.
      *
-     * @param array<string> $cookie
-     * @return bool
+     * @param array<string> $cookie The array of cookies.
+     * @return bool True if remembered, false otherwise.
      */
     public function doYouRememberMe(array $cookie): bool
     {
-        // Check if the "Remember Me" cookie exists
         if (!isset($cookie['sbRememberMe'])) {
             return false;
         }
-        // Retrieve the token from the cookie
-        $userId = $this->getUserForSessionId((string) $cookie['sbRememberMe'], 30);
+        $userId = $this->getUserForSessionId($cookie['sbRememberMe'], 30);
         if (is_null($userId)) {
             return false;
         }
-        // delete the old cookie id from protokronika_session_user as new one will be set in createSessionId anyway
-        // TODO escape SQL (string) $cookie['sbRememberMe']
-        $this->dbms->query('DELETE FROM ' . $this->tablePrefix . 'session_user WHERE `user_id` = ' . $userId . ' AND `token` = "'
-            . (string) $cookie['sbRememberMe'] . '";');
-        $this->createSessionId($userId); // incidentally also updates the RM cookie
+        $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId . " AND token = '"
+            . $cookie['sbRememberMe'] . "';");
+        $this->createSessionId($userId);
         return true;
     }
 
     /**
-     * Fetch only the first row.
+     * Fetches the first row of a query result.
      *
-     * @param string $query
-     * @return array<scalar>|null
+     * @param string $query SQL query string.
+     * @return array<scalar>|null Associative array of the row or null if no rows.
      */
     private function fetchFirstRow(string $query): ?array
     {
         $result = $this->dbms->query($query);
-        return is_bool($result) ? null : ( $result->fetch_assoc() ?? null);
+        return is_bool($result) ? null : $result->fetch_assoc();
     }
 
     /**
+     * Handles actions after a user's first unconfirmed login.
+     * TODO THIS MUST BE ADAPTED IN THE APP TO CHANGE THIS BEHAVIOUR!
+     *
      * Child class may redefine what happens after the first login
      * I.e. promo group etc.
      * (TODO: welcome email should come after first confirmed login)
      *
-     * @param ?int $userId
-     * @return void
+     * @param ?int $userId Optional user ID; uses current user ID if not provided.
      */
     protected function firstUnconfirmedLogin(?int $userId = null): void
     {
-        // Create the root item
-        $this->dbms->query('INSERT INTO `' . $this->tablePrefix . 'items` (`owner_id`) VALUES ('
-            . ($userId ?? $this->getUserId()) . ");");
+        // Creates the root item
+        // TODO MUST BE IN PROTOKRON
+        //        $this->dbms->query("INSERT INTO `{$this->tablePrefix}items` (owner_id) VALUES ("
+        //            . ($userId ?? $this->getUserId()) . ");");
         // TODO check whether removing unused users removes also these unused elements
     }
 
     /**
-     * Generate a unique token for the user session.
+     * Generates a unique token for user sessions or actions.
      *
      * TODO next phase - CSRF token method used
      *
-     * @return string
+     * @return string A hexadecimal token string.
      */
     private function generateToken(): string
     {
@@ -152,9 +155,10 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Return the user's email.
+     * Retrieves the email of the currently authenticated user.
      *
-     * @return string
+     * @return string The user's email address.
+     * @throws \Exception If the email has not been set.
      */
     public function getEmail(): string
     {
@@ -165,11 +169,11 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Return the list of groups to which user belong. It may be empty.
+     * Retrieves the list of groups the user belongs to. It may be empty.
      *
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
-     * @return int[]
+     * @return int[] An array of group IDs.
      */
     public function getGroups(): array
     {
@@ -178,26 +182,28 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Return the id of user's role.
+     * Retrieves the role ID of the authenticated user.
      *
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
-     * @return int
+     * @return int The role ID.
+     * @throws \Exception If the role ID has not been set.
      */
     public function getRoleId(): int
     {
         if (empty($this->roleId)) {
-            throw new \Exception('You should first check the existence of User.'); // todo check it here?
+            throw new \Exception('You should first check the existence of User.'); // todo check it really here?
         }
         return $this->roleId;
     }
 
     /**
-     * Return the user's id.
+     * Retrieves the user ID of the authenticated user.
      *
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
-     * @return int
+     * @return int The user ID.
+     * @throws \Exception If the user ID has not been set.
      */
     public function getUserId(): int
     {
@@ -208,46 +214,40 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Select userId from session_user where $sessionId and not older than 15 minutes. Otherwise return null.
+     * Determines if the user with the given session token exists and is not older than specified days.
      *
-     * @param string $sessionToken
-     * @param int $days to respect validity of a saved token
-     * @return ?int userId (null = no match)
+     * @param string $sessionToken Session token to validate.
+     * @param int $days Number of days the token should be considered valid.
+     * @return ?int User ID if valid, null otherwise.
      */
     private function getUserForSessionId(string $sessionToken, int $days = 1): ?int
     {
-        // todo escapeSql $sessionToken
-        // It logs you out after 1 day of non-usage
-        //$row = $this->fetchFirstRow('SELECT user_id, updated FROM protokronika_session_user WHERE token = "'
-        //    . (string) $sessionToken . '" AND updated > (NOW() - INTERVAL ' . $days . ' DAY);');
-        // TODO precalculate NOW() - INTERVAL and round it to 30 minutes in order to cache the SQL responses
-        // Calculate 1 day from now in PHP
+        $sessionTokenEscaped = $this->dbms->real_escape_string($sessionToken);
+        // Calculate $days from now in PHP instead of `NOW() - INTERVAL` in order to cache the SQL responses
         $oneDayTillNow = new DateTime('-' . $days . ' day');
         // Regardless of rounding up, reset minutes (and seconds) to 0
         $oneDayTillNow->setTime((int) $oneDayTillNow->format('H'), 0, 0);
         $pastDate = $oneDayTillNow->format('Y-m-d H:i:s');
         Debugger::barDump($pastDate, 'Past date'); // debug
-        $row = $this->fetchFirstRow('SELECT user_id, updated FROM ' . $this->tablePrefix . 'session_user WHERE token = "'
-            . (string) $sessionToken . '" AND updated > "' . $pastDate . '";');
-        //Debugger::barDump($row2, 'static date');
-        // todo if row2 returns the same as for row, use the precalculated rounded statement instead of now()
+        $row = $this->fetchFirstRow("SELECT user_id, updated FROM `{$this->tablePrefix}session_user` WHERE token = '"
+            . $sessionTokenEscaped . "' AND updated > '" . $pastDate . "';");
         if (is_null($row)) {
             return null;
         }
         // Update last access
         // TODO prolongate session only if the previous access is older than 5 minutes to reduce SQL load
-        Debugger::barDump($row, 'User for session');
-        $this->dbms->query('UPDATE ' . $this->tablePrefix . 'session_user SET updated = CURRENT_TIMESTAMP WHERE token = "'
-            . (string) $sessionToken . '";');
+        Debugger::barDump($row, 'User for session'); // debug
+        $this->dbms->query("UPDATE `{$this->tablePrefix}session_user` SET updated = CURRENT_TIMESTAMP WHERE token = '"
+            . $sessionTokenEscaped . "';");
         return (int) $row['user_id'];
     }
 
     /**
-     * Determine whether the user is authenticated.
+     * Determines if the user is authenticated by checking the session.
      *
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
-     * @return bool
+     * @return bool True if authenticated, false otherwise.
      */
     public function isAuthenticated(): bool
     {
@@ -268,41 +268,41 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Determine whether the user trying to authenticate is a new user.
+     * Determines if the current authentication attempt is for a new user.
      *
-     * @return bool
+     * @return bool True if new user, false otherwise.
+     * @throws \Exception If called at an inappropriate time.
      */
     public function isNewUser(): bool
     {
         if (is_null($this->isNewUser)) {
-            throw new \Exception('isNewUser should not be called in this moment.');
+            throw new \Exception('isNewUser should not be called at this moment.');
         }
         return (bool) $this->isNewUser;
     }
 
     /**
-     * Validate the email token and if successful, populate the User.
+     * Validates an email token and populates user data upon success.
      *
-     * Check for sessionToken as well to force login to the same environment.
+     * ?? Check for sessionToken as well to force login to the same environment.
      *
-     * @param string $emailToken
-     * @return bool
+     * @param string $emailToken Email token to validate.
+     * @return bool True if the token is valid, false otherwise.
      */
     public function isTokenValid(string $emailToken): bool
     {
         $row = $this->fetchFirstRow(
-            'SELECT id,email FROM ' . $this->tablePrefix . 'email_token WHERE token = "' . (string) $emailToken
-            . '"  AND created > (NOW() - INTERVAL 15 MINUTE);'
+            "SELECT id, email FROM `{$this->tablePrefix}email_token` WHERE token = '" . $emailToken
+            . "' AND created > (NOW() - INTERVAL 15 MINUTE);"
         );
         if (is_null($row)) {
             return false;
         }
         // Token is one time only
-        $this->dbms->query('DELETE FROM ' . $this->tablePrefix . 'email_token WHERE id = ' . (int) $row['id'] . ';');
-
-        // Update last_access
-        $this->dbms->query('UPDATE ' . $this->tablePrefix . 'users SET last_login = CURRENT_TIMESTAMP WHERE email = "'
-            . (string) $row['email'] . '";');
+        $this->dbms->query("DELETE FROM `{$this->tablePrefix}email_token` WHERE id = " . (int) $row['id'] . ";");
+         // Update last_access
+        $this->dbms->query("UPDATE `{$this->tablePrefix}users` SET last_login = CURRENT_TIMESTAMP WHERE email = '"
+            . (string) $row['email'] . "';");
 
         $this->populateUserByEmail((string) $row['email']);
         return true;
@@ -319,10 +319,12 @@ class IdentityManager implements IdentityManagerInterface
         // Validate existence of the user or create it
         // Select email From users and if nothing returned, then INSERT email INTO users
         // (Note never loggedin users older than 15 minutes are destroyed) <- TODO
-        $result = $this->dbms->query('SELECT email FROM ' . $this->tablePrefix . 'users WHERE email = "' . (string) $email . '";');
+        Assert::email($email); // TODO more specific Exception to catch exactly it in a PHPUnit test
+        $result = $this->dbms->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '"
+            . (string) $email . "';");
         if (is_bool($result) || !$result->fetch_assoc()) {
-            $this->dbms->query('INSERT INTO ' . $this->tablePrefix . 'users (email, created) VALUES ("' . (string) $email
-                . '", CURRENT_TIMESTAMP);'); // todo assert insert doesn't fail
+            $this->dbms->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . (string) $email
+                . "', CURRENT_TIMESTAMP);"); // todo assert insert doesn't fail
             $this->firstUnconfirmedLogin((int) $this->dbms->insert_id);
             // Note: If the number is greater than maximal int value, mysqli_insert_id() will return a string.
             $this->isNewUser = true;
@@ -331,8 +333,9 @@ class IdentityManager implements IdentityManagerInterface
         }
         $this->token = $this->generateToken();
         // Generate and store a token for this email
-        $this->dbms->query('INSERT INTO ' . $this->tablePrefix . 'email_token (email, token, created) VALUES ("' . (string) $email
-            . '", "' . (string) $this->token . '", CURRENT_TIMESTAMP);'); // todo assert insert doesn't fail
+        $this->dbms->query("INSERT INTO `{$this->tablePrefix}email_token` (email, token, created) VALUES ('"
+            . (string) $email . "', '" . (string) $this->token . "', CURRENT_TIMESTAMP);");
+        // todo assert insert doesn't fail
         return $this->token;
     }
 
@@ -345,14 +348,14 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function logout(): void
     {
-        $this->dbms->query('DELETE FROM protokronika_session_user WHERE token = "'
-            . (string) $_SESSION['sbSessionToken'] . '";');
+        $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
+            . (string) $_SESSION['sbSessionToken'] . "';");
         unset($_SESSION['sbSessionToken']);
         // todo remove csrf tokens from this browser context
         // Remove "Remember Me" cookie if it exists both from database and from cookies
         if (isset($_COOKIE['sbRememberMe'])) {
-            $this->dbms->query('DELETE FROM protokronika_session_user WHERE token = "'
-                . (string) $_COOKIE['sbRememberMe'] . '";');
+            $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
+                . (string) $_COOKIE['sbRememberMe'] . "';");
             setcookie('sbRememberMe', '', time() - 3600, $this->cookiePath, $this->cookieDomain, true, true);
         }
         $this->isAuthenticated = false;
@@ -369,8 +372,8 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function populateUserByEmail(string $email): void
     {
-        $row = $this->fetchFirstRow('SELECT id, role_id FROM protokronika_users WHERE email = "'
-            . (string) $email . '";');
+        $row = $this->fetchFirstRow("SELECT id, role_id FROM `{$this->tablePrefix}users` WHERE email = '"
+            . (string) $email . "';");
         if (is_null($row)) {
             throw new \Exception('An existing user expected.');
         }
@@ -379,7 +382,7 @@ class IdentityManager implements IdentityManagerInterface
         $this->userId = (int) $row['id'];
         $this->createSessionId($this->userId);
         Debugger::barDump(['email' => $this->email, 'roleId' => $this->roleId, 'userId' => $this->userId], 'User');
-        //$this->dbms->query("UPDATE protokronika_users SET last_access = CURRENT_TIMESTAMP WHERE
+        //$this->dbms->query("UPDATE `{$this->tablePrefix}users` SET last_access = CURRENT_TIMESTAMP WHERE
         // email = '{$this->email}'");
     }
 
@@ -394,7 +397,8 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function populateUserById(int $userId): void
     {
-        $row = $this->fetchFirstRow('SELECT email, role_id FROM protokronika_users WHERE id = ' . (int) $userId . ';');
+        $row = $this->fetchFirstRow("SELECT email, role_id FROM `{$this->tablePrefix}users` WHERE id = "
+            . (int) $userId . ";");
         if (is_null($row)) {
             throw new \Exception('An existing user expected.');
         }
@@ -403,7 +407,7 @@ class IdentityManager implements IdentityManagerInterface
         $this->userId = $userId;
         //$this->createSessionId($this->userId);
         Debugger::barDump(['email' => $this->email, 'roleId' => $this->roleId, 'userId' => $this->userId], 'User');
-        //$this->dbms->query("UPDATE protokronika_users SET last_access = CURRENT_TIMESTAMP
+        //$this->dbms->query("UPDATE `{$this->tablePrefix}users` SET last_access = CURRENT_TIMESTAMP
         // WHERE email = '{$this->email}'");
     }
 

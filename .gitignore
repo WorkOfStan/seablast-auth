@@ -3,6 +3,9 @@
 !/log/.htaccess
 /.phpunit.result.cache
 
+#disable private local files
+*.local.php
+
 #disable composer-managed libraries
 /vendor/
 #disable composer lock file

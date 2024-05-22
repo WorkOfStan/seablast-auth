@@ -12,7 +12,6 @@ use Tracy\Debugger;
  */
 class IdentityManagerTest extends TestCase
 {
-
     /** @var \mysqli */
     private $dbms;
     /** @var IdentityManager */
@@ -42,7 +41,6 @@ class IdentityManagerTest extends TestCase
             $this->fail('SQL injection attempt was not interrupted by an exception.');
             // For invalid email, no token should be generated
             //$this->assertFalse($this->user->isTokenValid($token), 'For invalid email, no token should be generated');
-
         } catch (\Webmozart\Assert\InvalidArgumentException $e) { //TODO even more specific exception
             // If an exception is thrown, it means there was an error
             //$this->fail('SQL injection attempt caused an exception: ' . $e->getMessage() . ' - ' . get_class($e));
@@ -76,7 +74,6 @@ class IdentityManagerTest extends TestCase
             $this->fail('Empty email entry attempt was not interrupted by an exception.');
             // For invalid email, no token should be generated
             //$this->assertFalse($this->user->isTokenValid($token), 'For invalid email, no token should be generated');
-
         } catch (\Webmozart\Assert\InvalidArgumentException $e) { //TODO even more specific exception
             // If an exception is thrown, it means there was an error
             //$this->fail('SQL injection attempt caused an exception: ' . $e->getMessage() . ' - ' . get_class($e));
@@ -95,7 +92,6 @@ class IdentityManagerTest extends TestCase
             $this->fail('Empty email entry attempt was not interrupted by an exception.');
             // For invalid email, no token should be generated
             //$this->assertFalse($this->user->isTokenValid($token), 'For invalid email, no token should be generated');
-
         } catch (\Webmozart\Assert\InvalidArgumentException $e) { //TODO even more specific exception
             // If an exception is thrown, it means there was an error
             //$this->fail('SQL injection attempt caused an exception: ' . $e->getMessage() . ' - ' . get_class($e));

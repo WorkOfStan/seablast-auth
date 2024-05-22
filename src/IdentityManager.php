@@ -105,8 +105,8 @@ class IdentityManager implements IdentityManagerInterface
         if (is_null($userId)) {
             return false;
         }
-        $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId . " AND token = '"
-            . $cookie['sbRememberMe'] . "';");
+        $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId
+            . " AND token = '" . $cookie['sbRememberMe'] . "';");
         $this->createSessionId($userId);
         return true;
     }

@@ -8,7 +8,7 @@ use Seablast\Seablast\SeablastSetup;
 use Tracy\Debugger;
 
 /**
- * // Todo later: isAuthenticated and logout expect session and cookie handling
+ * Todo later: isAuthenticated and logout expect session and cookie handling
  */
 class IdentityManagerTest extends TestCase
 {

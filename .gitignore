@@ -1,7 +1,7 @@
 #disable temporary and log files and dirs
 /log/*
 !/log/.htaccess
-/.phpunit.result.cache
+.phpunit.result.cache
 
 #disable private local files
 *.local.php

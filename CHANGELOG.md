@@ -23,7 +23,7 @@ IdentityManager and GroupManager
 - IdentityManager class manages user authentication and session handling. Uses MySQLi for database access. The connection is `SeablastSetup::getConfiguration()->dbms();` from a Seablast expected PHINX configuration.
 - GroupManager class to manipulate groups, to which a user may belong to.
 ### Security
-- PHPUnit tests for invalid emails and SQL injections attempts.
+- PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
 [Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1...HEAD
 [0.1]: https://github.com/WorkOfStan/seablast-auth/releases/tag/v0.1

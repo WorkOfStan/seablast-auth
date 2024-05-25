@@ -18,7 +18,7 @@ permissions:
 jobs:
   # Note: https://docs.github.com/en/actions/using-workflows/reusing-workflows The strategy property is not supported in any job that calls a reusable workflow.
   call-workflow:
-    uses: WorkOfStan/seablast-actions/.github/workflows/php-composer-dependencies-reusable.yml@feature/refactoring24w21
+    uses: WorkOfStan/seablast-actions/.github/workflows/php-composer-dependencies-reusable.yml@main
     with:
       # JSON
       php-version: '["7.2", "7.3", "7.4", "8.2", "8.3"]'

@@ -12,8 +12,8 @@ return static function (SeablastConfiguration $SBConfig): void {
     //$SBConfig->flag
     //    ->activate(SeablastConstant::FLAG_WEB_RUNNING)
     //;
-//    $SBConfig
-//        // Database
-//        ->setString(SeablastConstant::SB_PHINX_ENVIRONMENT, 'testing')
-//    ;
+    //$SBConfig
+    //    // Database
+    //    ->setString(SeablastConstant::SB_PHINX_ENVIRONMENT, 'testing')
+    //;
 };

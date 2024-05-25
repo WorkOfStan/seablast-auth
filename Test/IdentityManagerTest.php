@@ -5,6 +5,7 @@ namespace Seablast\Auth\Test;
 use PHPUnit\Framework\TestCase;
 use Seablast\Auth\IdentityManager;
 use Seablast\Seablast\SeablastSetup;
+use Seablast\Seablast\SeablastConstant;
 use Tracy\Debugger;
 
 /**
@@ -26,6 +27,7 @@ class IdentityManagerTest extends TestCase
             Debugger::enable(Debugger::DEVELOPMENT, __DIR__ . '/../log');
         }
         $setup = new SeablastSetup(); // combine configuration files into a valid configuration
+        $setup->getConfiguration()->setString(SeablastConstant::SB_PHINX_ENVIRONMENT, 'testing');
         $this->dbms = $setup->getConfiguration()->dbms();
         $this->user = new IdentityManager($this->dbms);
         $this->user->setTablePrefix($setup->getConfiguration()->dbmsTablePrefix());

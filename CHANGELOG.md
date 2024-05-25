@@ -20,8 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1] - YYYY-MM-DD
 IdentityManager and GroupManager
 ### Added
-- IdentityManager class manages user authentication and session handling. Uses MySQLi for database access. The connection is `SeablastSetup::getConfiguration()->dbms();` from a Seablast expected PHINX configuration.
-- GroupManager class to manipulate groups, to which a user may belong to.
+- class IdentityManager manages user authentication and session handling. Uses MySQLi for database access. The connection is `SeablastSetup::getConfiguration()->dbms();` from a Seablast expected PHINX configuration.
+- class GroupManager to manipulate groups, to which a user may belong to.
+- class UserModel to take care of the login/logout sequence.
+- view login-form.latte as UI.
 ### Security
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 

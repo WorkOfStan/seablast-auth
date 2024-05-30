@@ -8,9 +8,6 @@ use Tracy\Debugger;
 use Webmozart\Assert\Assert;
 
 /**
- * MIT License
- * TODO: Move to Seablast\Authentication
- *
  * Class to manipulate groups, to which a user may belong to.
  *
  * Phinx migrations will create following tables

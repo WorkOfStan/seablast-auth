@@ -40,8 +40,6 @@ class IdentityManager implements IdentityManagerInterface
     private $roleId;
     /** @var string Table prefix for SQL queries. */
     private $tablePrefix = '';
-    /** @var string Token for session management. */
-    private $token;
     /** @var int User ID. */
     private $userId;
 
@@ -98,16 +96,19 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function doYouRememberMe(array $cookie): bool
     {
+        // Check if the "Remember Me" cookie exists
         if (!isset($cookie['sbRememberMe'])) {
             return false;
         }
+        // Retrieve the token from the cookie
         $userId = $this->getUserForSessionId($cookie['sbRememberMe'], 30);
         if (is_null($userId)) {
             return false;
         }
+        // delete the old cookie id from protokronika_session_user as new one will be set in createSessionId anyway
         $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId
-            . " AND token = '" . $cookie['sbRememberMe'] . "';");
-        $this->createSessionId($userId);
+            . " AND token = '" . $this->dbms->real_escape_string($cookie['sbRememberMe']) . "';");
+        $this->createSessionId($userId); // incidentally also updates the RM cookie
         return true;
     }
 
@@ -121,25 +122,6 @@ class IdentityManager implements IdentityManagerInterface
     {
         $result = $this->dbms->query($query);
         return is_bool($result) ? null : $result->fetch_assoc();
-    }
-
-    /**
-     * Handles actions after a user's first unconfirmed login.
-     * TODO THIS MUST BE ADAPTED IN THE APP TO CHANGE THIS BEHAVIOUR!
-     *
-     * Child class may redefine what happens after the first login
-     * I.e. promo group etc.
-     * (TODO: welcome email should come after first confirmed login)
-     *
-     * @param ?int $userId Optional user ID; uses current user ID if not provided.
-     */
-    protected function firstUnconfirmedLogin(?int $userId = null): void
-    {
-        // Creates the root item
-        // TODO MUST BE IN PROTOKRON
-        //        $this->dbms->query("INSERT INTO `{$this->tablePrefix}items` (owner_id) VALUES ("
-        //            . ($userId ?? $this->getUserId()) . ");");
-        // TODO check whether removing unused users removes also these unused elements
     }
 
     /**
@@ -325,18 +307,18 @@ class IdentityManager implements IdentityManagerInterface
         if (is_bool($result) || !$result->fetch_assoc()) {
             $this->dbms->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . (string) $email
                 . "', CURRENT_TIMESTAMP);"); // todo assert insert doesn't fail
-            $this->firstUnconfirmedLogin((int) $this->dbms->insert_id);
             // Note: If the number is greater than maximal int value, mysqli_insert_id() will return a string.
+            $this->userId = (int) $this->dbms->insert_id;
             $this->isNewUser = true;
         } else {
             $this->isNewUser = false;
         }
-        $this->token = $this->generateToken();
+        $token = $this->generateToken();
         // Generate and store a token for this email
         $this->dbms->query("INSERT INTO `{$this->tablePrefix}email_token` (email, token, created) VALUES ('"
-            . (string) $email . "', '" . (string) $this->token . "', CURRENT_TIMESTAMP);");
+            . (string) $email . "', '" . (string) $token . "', CURRENT_TIMESTAMP);");
         // todo assert insert doesn't fail
-        return $this->token;
+        return $token;
     }
 
     /**

@@ -125,9 +125,10 @@ class UserModel implements SeablastModelInterface
                 }
                 // CSRF token validation
                 Assert::string($this->superglobals->post['csrfToken']);
-                $csrfToken = new CsrfToken('sb_json', $this->superglobals->post['csrfToken']);
                 $csrfTokenManager = new CsrfTokenManager();
-                if (!$csrfTokenManager->isTokenValid($csrfToken)) {
+                if (
+                    !$csrfTokenManager->isTokenValid(new CsrfToken('sb_json', $this->superglobals->post['csrfToken']))
+                ) {
                     Debugger::barDump("CSRF token mismatch", 'ERROR on input');
                     Debugger::log("CSRF token mismatch", ILogger::ERROR);
                     return (object) [
@@ -137,8 +138,10 @@ class UserModel implements SeablastModelInterface
                     ];
                 }
                 // All is ok. Send the login email.
-                $token = $this->user->login($this->superglobals->post['email']);
-                $this->sendLoginEmail($this->superglobals->post['email'], $token);
+                $this->sendLoginEmail(
+                    $this->superglobals->post['email'],
+                    $this->user->login($this->superglobals->post['email'])
+                );
                 return (object) [
                         'showLogin' => false,
                         'showLogout' => false,

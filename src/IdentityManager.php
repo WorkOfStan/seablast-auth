@@ -105,7 +105,7 @@ class IdentityManager implements IdentityManagerInterface
         if (is_null($userId)) {
             return false;
         }
-        // delete the old cookie id from protokronika_session_user as new one will be set in createSessionId anyway
+        // delete the old cookie id from session_user as new one will be set in createSessionId anyway
         $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId
             . " AND token = '" . $this->dbms->real_escape_string($cookie['sbRememberMe']) . "';");
         $this->createSessionId($userId); // incidentally also updates the RM cookie
@@ -117,10 +117,14 @@ class IdentityManager implements IdentityManagerInterface
      *
      * @param string $query SQL query string.
      * @return array<scalar>|null Associative array of the row or null if no rows.
+     * @throws Exceptions\DbmsException on database statement error
      */
     private function fetchFirstRow(string $query): ?array
     {
         $result = $this->dbms->query($query);
+        if ($result === false) {
+            throw new Exceptions\DbmsException($this->dbms->errno . ': ' . $this->dbms->error);
+        }
         return is_bool($result) ? null : $result->fetch_assoc();
     }
 
@@ -395,9 +399,6 @@ class IdentityManager implements IdentityManagerInterface
 
     /**
      * Table prefix injection.
-     *
-     * Used for groups, so far.
-     * Todo use it for queries in this class, as well.
      *
      * @param string $tablePrefix
      * @return void

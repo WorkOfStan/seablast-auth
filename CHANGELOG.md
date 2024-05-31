@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1] - YYYY-MM-DD
 IdentityManager and GroupManager
 ### Added
-- class IdentityManager manages user authentication and session handling. Uses MySQLi for database access. The connection is `SeablastSetup::getConfiguration()->dbms();` from a Seablast expected PHINX configuration.
+- class IdentityManager manages user authentication and session handling. Uses MySQLi for database access. The connection is `SeablastSetup::getConfiguration()->dbms();` from a Seablast expected [Phinx configuration](https://book.cakephp.org/phinx/0/en/configuration.html).
 - class GroupManager to manipulate groups, to which a user may belong to.
 - class UserModel to take care of the login/logout sequence.
 - view login-form.latte as UI.

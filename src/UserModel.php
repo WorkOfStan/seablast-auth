@@ -51,6 +51,7 @@ class UserModel implements SeablastModelInterface
         $this->configuration = $configuration;
         $this->superglobals = $superglobals;
         $this->user = new IdentityManager($this->configuration->dbms());
+        $this->user->setTablePrefix($this->configuration->dbmsTablePrefix());
     }
 
     /**

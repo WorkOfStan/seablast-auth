@@ -9,6 +9,14 @@ If your Seablast-based application necessitates user authentication or resource 
 
 ## Usage
 
+When just getting the identity of a logged-in user is needed:
+```php
+    // Instantiate the IdentityManager class with `\mysqli`
+    $identity = new IdentityManager($this->configuration->dbms());
+    // If prefix is used, inject it
+    $identity->setTablePrefix($this->configuration->dbmsTablePrefix());
+```
+
 ### Routing
 `/user` is expected, so configure it within your `conf/app.conf.php` like this:
 ```php

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Seablast\Auth;
 
 use DateTime;
+use Seablast\Auth\Exceptions\DbmsException;
 use Seablast\Interfaces\IdentityManagerInterface;
 use Tracy\Debugger;
 use Webmozart\Assert\Assert;
@@ -117,13 +118,13 @@ class IdentityManager implements IdentityManagerInterface
      *
      * @param string $query SQL query string.
      * @return array<scalar>|null Associative array of the row or null if no rows.
-     * @throws Exceptions\DbmsException on database statement error
+     * @throws DbmsException on database statement error
      */
     private function fetchFirstRow(string $query): ?array
     {
         $result = $this->dbms->query($query);
         if ($result === false) {
-            throw new Exceptions\DbmsException($this->dbms->errno . ': ' . $this->dbms->error);
+            throw new DbmsException($this->dbms->errno . ': ' . $this->dbms->error);
         }
         return is_bool($result) ? null : $result->fetch_assoc();
     }

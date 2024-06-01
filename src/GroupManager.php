@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Seablast\Auth;
 
+use Seablast\Auth\Exceptions\DbmsException;
 use Tracy\Debugger;
 use Webmozart\Assert\Assert;
 
@@ -27,10 +28,10 @@ class GroupManager
     /** @var int */
     private $userId;
 
-    public const ACTIVATION_WRONG_TOKEN = 401; // 'wrong_token';
-    public const ACTIVATION_ALREADY = 304; // 'already_activated';
-    public const ACTIVATION_NEW = 200; // 'new_activation';
-    public const ACTIVATION_FAILED = 500; // 'activation_failed';
+    public const ACTIVATION_WRONG_TOKEN = 401; // wrong_token
+    public const ACTIVATION_ALREADY = 304; // already_activated
+    public const ACTIVATION_NEW = 200; // new_activation
+    public const ACTIVATION_FAILED = 500; // activation_failed
 
     /**
      * @param \mysqli $dbms
@@ -53,6 +54,7 @@ class GroupManager
      *
      * @param string $token
      * @return int self::ACTIVATION constant mimicking the HTTP response codes
+     * @throws DbmsException on database statement error
      */
     public function activateGroupByToken(string $token): int
     {
@@ -61,7 +63,7 @@ class GroupManager
             . 'group_activation_tokens` WHERE token = "' . $this->dbms->real_escape_string($token)
             . '" AND valid_from <= NOW() AND valid_to >= NOW();');
         if (is_bool($resultToken)) {
-            throw new \Exception('Db expected.');
+            throw new DbmsException('Db expected.');
         }
         $tokenData = $resultToken->fetch_assoc(); // fetch first row, it should be the only one, anyway
         Debugger::barDump($tokenData, 'tokenData');
@@ -102,6 +104,7 @@ class GroupManager
      * Called typically during authentication.
      *
      * @return int[]
+     * @throws DbmsException on database statement error
      */
     public function getGroupsByUserId(): array
     {
@@ -110,7 +113,7 @@ class GroupManager
             . 'user_group` ug ON g.id = ug.group_id  WHERE ug.user_id = ' . (int) $this->userId . ';'
         ); // TODO maybe just `WHERE user_id` would be sufficient. Or I want group name as well here?
         if (is_bool($result)) {
-            throw new \Exception('Db expected.');
+            throw new DbmsException('Db expected.');
         }
         // Transform to int[]
         $groups = [];

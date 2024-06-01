@@ -17,6 +17,17 @@ When just getting the identity of a logged-in user is needed:
     $identity->setTablePrefix($this->configuration->dbmsTablePrefix());
 ```
 
+To create the expected database table structure, just add the seablast/auth migration path to the phinx.php configuration, e.g.
+```php
+    'paths' => [
+        'migrations' => [
+            '%%PHINX_CONFIG_DIR%%/db/migrations',
+            '%%PHINX_CONFIG_DIR%%/../vendor/seablast/auth/conf/db/migrations',
+        ],
+        'seeds' => '%%PHINX_CONFIG_DIR%%/db/seeds'
+    ],
+```
+
 ### Routing
 `/user` is expected, so configure it within your `conf/app.conf.php` like this:
 ```php
@@ -31,6 +42,7 @@ When just getting the identity of a logged-in user is needed:
 ```
 
 ### View
+`\Seablast\Auth\UserModel` returns arguments ($configuration, $csrfToken, $message, $showLogin, $showLogout) for the user.latte template:
 ```latte
 {include '../vendor/seablast/auth/views/login-form.latte'}
 ```

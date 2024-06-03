@@ -181,7 +181,8 @@ class UserModel implements SeablastModelInterface
             return;
         }
         $transport = Transport::fromDsn(
-            'smtp://' . SeablastConstant::SB_SMTP_HOST . ':' . SeablastConstant::SB_SMTP_PORT
+            'smtp://' . $this->configuration->getString(SeablastConstant::SB_SMTP_HOST) . ':'
+            . (string) $this->configuration->getInt(SeablastConstant::SB_SMTP_PORT)
         );
         $mailer = new Mailer($transport);
         $emailInstance = (new Email())

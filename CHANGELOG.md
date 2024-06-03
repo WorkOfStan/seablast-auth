@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+## [0.1.1] - 2024-06-03
+### Fixed
+- Transport DSN
+
 ## [0.1] - 2024-06-01
 IdentityManager and GroupManager
 ### Added

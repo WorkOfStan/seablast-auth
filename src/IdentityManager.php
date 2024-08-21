@@ -117,7 +117,7 @@ class IdentityManager implements IdentityManagerInterface
      * Fetches the first row of a query result.
      *
      * @param string $query SQL query string.
-     * @return array<scalar>|null Associative array of the row or null if no rows.
+     * @return array<?scalar>|null Associative array of the row or null if no rows.
      * @throws DbmsException on database statement error
      */
     private function fetchFirstRow(string $query): ?array

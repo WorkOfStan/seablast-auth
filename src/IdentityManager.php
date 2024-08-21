@@ -125,8 +125,14 @@ class IdentityManager implements IdentityManagerInterface
         $result = $this->dbms->query($query);
         if ($result === false) {
             throw new DbmsException($this->dbms->errno . ': ' . $this->dbms->error);
+        } elseif (is_bool($result)) {
+            return null;
         }
-        return is_bool($result) ? null : $result->fetch_assoc();
+        $output = $result->fetch_assoc();
+        if ($output === false) {
+            throw new DbmsException('fetch_assoc failed for fetchFirstRow');
+        }
+        return $output;
     }
 
     /**
@@ -145,12 +151,12 @@ class IdentityManager implements IdentityManagerInterface
      * Retrieves the email of the currently authenticated user.
      *
      * @return string The user's email address.
-     * @throws \Exception If the email has not been set.
+     * @throws \RuntimeException If the email has not been set.
      */
     public function getEmail(): string
     {
         if (empty($this->email)) {
-            throw new \Exception('You should first check the existence of User.');
+            throw new \RuntimeException('You should first check the existence of User.');
         }
         return $this->email;
     }
@@ -174,12 +180,12 @@ class IdentityManager implements IdentityManagerInterface
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
      * @return int The role ID.
-     * @throws \Exception If the role ID has not been set.
+     * @throws \RuntimeException If the role ID has not been set.
      */
     public function getRoleId(): int
     {
         if (empty($this->roleId)) {
-            throw new \Exception('You should first check the existence of User.'); // todo check it really here?
+            throw new \RuntimeException('You should first check the existence of User.'); // todo check it really here?
         }
         return $this->roleId;
     }
@@ -190,12 +196,12 @@ class IdentityManager implements IdentityManagerInterface
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
      * @return int The user ID.
-     * @throws \Exception If the user ID has not been set.
+     * @throws \RuntimeException If the user ID has not been set.
      */
     public function getUserId(): int
     {
         if (empty($this->userId)) {
-            throw new \Exception('You should first check the existence of User.');
+            throw new \RuntimeException('You should first check the existence of User.');
         }
         return $this->userId;
     }
@@ -258,12 +264,12 @@ class IdentityManager implements IdentityManagerInterface
      * Determines if the current authentication attempt is for a new user.
      *
      * @return bool True if new user, false otherwise.
-     * @throws \Exception If called at an inappropriate time.
+     * @throws \RuntimeException If called at an inappropriate time.
      */
     public function isNewUser(): bool
     {
         if (is_null($this->isNewUser)) {
-            throw new \Exception('isNewUser should not be called at this moment.');
+            throw new \RuntimeException('isNewUser should not be called at this moment.');
         }
         return (bool) $this->isNewUser;
     }

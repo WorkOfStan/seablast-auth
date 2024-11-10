@@ -63,7 +63,7 @@ class IdentityManager implements IdentityManagerInterface
      * @param string $email
      * @return void
      */
-    public function checkEmailOrCreateUser(string $email): void
+    private function checkEmailOrCreateUser(string $email): void
     {
         // Validate existence of the user or create it
         // Select email From users and if nothing returned, then INSERT email INTO users
@@ -343,6 +343,20 @@ class IdentityManager implements IdentityManagerInterface
             . (string) $email . "', '" . (string) $token . "', CURRENT_TIMESTAMP);");
         // todo assert insert doesn't fail
         return $token;
+    }
+
+    /**
+     * Immediate login.
+     *
+     * TODO try with social login
+     *
+     * @param string $email
+     * @return void
+     */
+    public function loginWithTrustedEmail(string $email): void
+    {
+        $this->checkEmailOrCreateUser($email);
+        $this->populateUserByEmail($email);
     }
 
     /**

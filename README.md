@@ -3,7 +3,7 @@
 A no-password authentication and authorization extension for [Seablast for PHP](https://github.com/WorkOfStan/seablast) apps.
 This extension facilitates secure user verification and efficient access control.
 
-Optionally, `Seablast\Auth` integrates with the HybridAuth library to support social authentication, allowing seamless sign-in through various social media platforms.
+Optionally, `Seablast\Auth` integrates with the HybridAuth library (actually it's not maintained so other venues must be explored) to support social authentication, allowing seamless sign-in through various social media platforms.
 Integrable via Composer, it activates only when required, equipping your app with essential security features effortlessly.
 If your Seablast-based application necessitates user authentication or resource authorization, incorporating `Seablast\Auth` will equip it with these capabilities instantly.
 (For applications that do not require these features, `Seablast\Auth` can simple be not included to maintain a lighter application footprint.)

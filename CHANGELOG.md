@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added` for new features
 
+- Prettier-fix.
+- UserException to identify user runtime exceptions.
+- Immediate loginWithTrustedEmail for social login plugins.
+
 ### `Changed` for changes in existing functionality
 
 ### `Deprecated` for soon-to-be removed features

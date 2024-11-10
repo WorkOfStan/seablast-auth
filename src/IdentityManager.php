@@ -6,6 +6,7 @@ namespace Seablast\Auth;
 
 use DateTime;
 use Seablast\Auth\Exceptions\DbmsException;
+use Seablast\Auth\Exceptions\UserException;
 use Seablast\Interfaces\IdentityManagerInterface;
 use Tracy\Debugger;
 use Webmozart\Assert\Assert;
@@ -54,6 +55,31 @@ class IdentityManager implements IdentityManagerInterface
         $this->dbms = $dbms;
         $this->cookiePath = '/'; // todo limit
         $this->cookieDomain = ''; // todo extract
+    }
+
+    /**
+     * If email belongs to an existing user, isNewUser = false; otherwise INSERT new user and isNewUser = true.
+     *
+     * @param string $email
+     * @return void
+     */
+    public function checkEmailOrCreateUser(string $email): void
+    {
+        // Validate existence of the user or create it
+        // Select email From users and if nothing returned, then INSERT email INTO users
+        // (Note never loggedin users older than 15 minutes are destroyed) <- TODO
+        Assert::email($email); // TODO more specific Exception to catch exactly it in a PHPUnit test
+        $result = $this->dbms->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '"
+            . (string) $email . "';");
+        if (is_bool($result) || !$result->fetch_assoc()) {
+            $this->dbms->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . (string) $email
+                . "', CURRENT_TIMESTAMP);"); // todo assert insert doesn't fail
+            // Note: If the number is greater than maximal int value, mysqli_insert_id() will return a string.
+            $this->userId = (int) $this->dbms->insert_id;
+            $this->isNewUser = true;
+        } else {
+            $this->isNewUser = false;
+        } 
     }
 
     /**
@@ -151,12 +177,12 @@ class IdentityManager implements IdentityManagerInterface
      * Retrieves the email of the currently authenticated user.
      *
      * @return string The user's email address.
-     * @throws \RuntimeException If the email has not been set.
+     * @throws UserException If the email has not been set.
      */
     public function getEmail(): string
     {
         if (empty($this->email)) {
-            throw new \RuntimeException('You should first check the existence of User.');
+            throw new UserException('You should first check the existence of User.');
         }
         return $this->email;
     }
@@ -180,12 +206,12 @@ class IdentityManager implements IdentityManagerInterface
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
      * @return int The role ID.
-     * @throws \RuntimeException If the role ID has not been set.
+     * @throws UserException If the role ID has not been set.
      */
     public function getRoleId(): int
     {
         if (empty($this->roleId)) {
-            throw new \RuntimeException('You should first check the existence of User.'); // todo check it really here?
+            throw new UserException('You should first check the existence of User.'); // todo check it really here?
         }
         return $this->roleId;
     }
@@ -196,12 +222,12 @@ class IdentityManager implements IdentityManagerInterface
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
      * @return int The user ID.
-     * @throws \RuntimeException If the user ID has not been set.
+     * @throws UserException If the user ID has not been set.
      */
     public function getUserId(): int
     {
         if (empty($this->userId)) {
-            throw new \RuntimeException('You should first check the existence of User.');
+            throw new UserException('You should first check the existence of User.');
         }
         return $this->userId;
     }
@@ -264,12 +290,12 @@ class IdentityManager implements IdentityManagerInterface
      * Determines if the current authentication attempt is for a new user.
      *
      * @return bool True if new user, false otherwise.
-     * @throws \RuntimeException If called at an inappropriate time.
+     * @throws UserException If called at an inappropriate time.
      */
     public function isNewUser(): bool
     {
         if (is_null($this->isNewUser)) {
-            throw new \RuntimeException('isNewUser should not be called at this moment.');
+            throw new UserException('isNewUser should not be called at this moment.');
         }
         return (bool) $this->isNewUser;
     }
@@ -302,28 +328,16 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Logic for the user login.
+     * Logic for the user login. Validate email and return a token to be sent by email.
+     *
+     * TODO allow inserting the token to an input box.
      *
      * @param string $email
      * @return string
      */
     public function login(string $email): string
     {
-        // Validate existence of the user or create it
-        // Select email From users and if nothing returned, then INSERT email INTO users
-        // (Note never loggedin users older than 15 minutes are destroyed) <- TODO
-        Assert::email($email); // TODO more specific Exception to catch exactly it in a PHPUnit test
-        $result = $this->dbms->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '"
-            . (string) $email . "';");
-        if (is_bool($result) || !$result->fetch_assoc()) {
-            $this->dbms->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . (string) $email
-                . "', CURRENT_TIMESTAMP);"); // todo assert insert doesn't fail
-            // Note: If the number is greater than maximal int value, mysqli_insert_id() will return a string.
-            $this->userId = (int) $this->dbms->insert_id;
-            $this->isNewUser = true;
-        } else {
-            $this->isNewUser = false;
-        }
+        $this->checkEmailOrCreateUser($email);
         $token = $this->generateToken();
         // Generate and store a token for this email
         $this->dbms->query("INSERT INTO `{$this->tablePrefix}email_token` (email, token, created) VALUES ('"
@@ -361,14 +375,14 @@ class IdentityManager implements IdentityManagerInterface
      *
      * @param string $email
      * @return void
-     * @throws \Exception
+     * @throws UserException An existing user expected.
      */
     private function populateUserByEmail(string $email): void
     {
         $row = $this->fetchFirstRow("SELECT id, role_id FROM `{$this->tablePrefix}users` WHERE email = '"
             . (string) $email . "';");
         if (is_null($row)) {
-            throw new \Exception('An existing user expected.');
+            throw new UserException('An existing user expected.');
         }
         $this->email = $email;
         $this->roleId = (int) $row['role_id'];
@@ -386,14 +400,14 @@ class IdentityManager implements IdentityManagerInterface
      *
      * @param int $userId
      * @return void
-     * @throws \Exception
+     * @throws UserException An existing user expected.
      */
     private function populateUserById(int $userId): void
     {
         $row = $this->fetchFirstRow("SELECT email, role_id FROM `{$this->tablePrefix}users` WHERE id = "
             . (int) $userId . ";");
         if (is_null($row)) {
-            throw new \Exception('An existing user expected.');
+            throw new UserException('An existing user expected.');
         }
         $this->email = (string) $row['email'];
         $this->roleId = (int) $row['role_id'];

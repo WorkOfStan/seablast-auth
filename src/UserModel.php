@@ -40,6 +40,8 @@ class UserModel implements SeablastModelInterface
     private $superglobals;
     /** @var IdentityManager */
     private $user;
+    /** @var string TODO /user URL is managed on the app level - make this configurable */
+    private $userLink = '/user';
 
     /**
      *
@@ -66,7 +68,7 @@ class UserModel implements SeablastModelInterface
                 $this->user->logout();
                 return (object) [
                         'redirectionUrl' => $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
-                        . '/user', // Todo go home instead?
+                        . $this->userLink, // Todo go home instead?
                 ];
             }
             return (object) [
@@ -90,7 +92,8 @@ class UserModel implements SeablastModelInterface
                     // todo go to the original target insted of /user
                     return (object) [
                             'redirectionUrl' =>
-                            $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL) . '/user',
+                            $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
+                            . $this->userLink,
                     ];
                 }
                 return (object) [
@@ -104,7 +107,7 @@ class UserModel implements SeablastModelInterface
                 Debugger::barDump('Auto-relogin.');
                 return (object) [// exactly the same as with valid token
                         'redirectionUrl' =>
-                        $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL) . '/user',
+                        $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL) . $this->userLink,
                 ];
             }
             // první přístup
@@ -146,7 +149,7 @@ class UserModel implements SeablastModelInterface
                 return (object) [
                         'showLogin' => false,
                         'showLogout' => false,
-                        'message' => 'Na zadaný email vám přijde přihlašovací adresa. Proklikněte jí.'
+                        'message' => 'Na zadaný email vám přijde přihlašovací odkaz. Proklikněte ho.'
                         . ' Žádná hesla nejsou třeba.',
                 ];
             }
@@ -166,7 +169,7 @@ class UserModel implements SeablastModelInterface
     private function sendLoginEmail(string $emailAddress, string $token): void
     {
         $loginUrl = $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
-            . '/user/?token=' . $token; // TODO session should keep the original target URL - deep loging
+            . $this->userLink . '/?token=' . $token; // TODO session should keep the original target URL - deep loging
         Debugger::barDump($loginUrl, $this->user->isNewUser() ? 'registerUrl' : 'loginUrl');
         $plainText = str_replace(
             '%URL%',

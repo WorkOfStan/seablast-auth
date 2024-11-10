@@ -79,11 +79,11 @@ class IdentityManager implements IdentityManagerInterface
             $this->isNewUser = true;
         } else {
             $this->isNewUser = false;
-        } 
+        }
     }
 
     /**
-     * Creates a session ID and a remember me token.
+     * Creates a session ID and a remember-me token.
      *
      * TODO consider insert also type (short session, long remember me) for selective purge
      *
@@ -101,12 +101,11 @@ class IdentityManager implements IdentityManagerInterface
         $_SESSION['sbSessionToken'] = $sessionId;
         // todo if not flag allow Remember Me; then return;
         // Create relogin cookie which expires in 30 days
-        $expireTime = 30 * 24 * 60 * 60; // days * hours * minutes * seconds
-        // todo consider setcookie method, so that all parameters are the same when creating and deleting
+        // todo consider IM::setcookie method, so that all parameters are the same when creating and deleting
         setcookie(
             'sbRememberMe',
             $rememberMeToken,
-            time() + $expireTime,
+            time() + 30 * 24 * 60 * 60, // expire time: days * hours * minutes * seconds
             $this->cookiePath,
             $this->cookieDomain,
             true,

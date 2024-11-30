@@ -103,11 +103,16 @@ class UserModel implements SeablastModelInterface
                 ];
             }
             // auto re-login attempt
-            if ($this->user->doYouRememberMe(// pass through only strings
-                array_filter($superglobals->cookies, function ($item) {
-                    return is_string($item);
-                })
-            )) {
+            if (
+                $this->user->doYouRememberMe(// let through only strings
+                    array_filter(
+                        $this->superglobals->cookies,
+                        function ($item) {
+                            return is_string($item);
+                        }
+                    )
+                )
+            ) {
                 Debugger::barDump('Auto-relogin.');
                 return (object) [// exactly the same as with valid token
                         'redirectionUrl' =>

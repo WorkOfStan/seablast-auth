@@ -106,7 +106,7 @@ class UserModel implements SeablastModelInterface
             if (
                 $this->user->doYouRememberMe(// let through only strings
                     array_filter(
-                        $this->superglobals->cookies,
+                        $_COOKIES,
                         function ($item) {
                             return is_string($item);
                         }

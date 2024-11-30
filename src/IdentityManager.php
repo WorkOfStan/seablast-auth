@@ -270,7 +270,7 @@ class IdentityManager implements IdentityManagerInterface
     public function isAuthenticated(): bool
     {
         $sessionId = $_SESSION['sbSessionToken'] ?? null;
-        if (is_null($sessionId)) {
+        if (is_null($sessionId) || !is_string($sessionId)) {
             // todo doYouRememberMe?
             $this->isAuthenticated = false;
         } else {
@@ -368,12 +368,14 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function logout(): void
     {
+        Assert::string($_SESSION['sbSessionToken']);
         $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
-            . (string) $_SESSION['sbSessionToken'] . "';");
+            . $_SESSION['sbSessionToken'] . "';");
         unset($_SESSION['sbSessionToken']);
         // todo remove csrf tokens from this browser context
         // Remove "Remember Me" cookie if it exists both from database and from cookies
         if (isset($_COOKIE['sbRememberMe'])) {
+            Assert::string($_COOKIE['sbRememberMe']);
             $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
                 . (string) $_COOKIE['sbRememberMe'] . "';");
             setcookie('sbRememberMe', '', time() - 3600, $this->cookiePath, $this->cookieDomain, true, true);

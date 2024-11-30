@@ -106,7 +106,7 @@ class UserModel implements SeablastModelInterface
             if (
                 $this->user->doYouRememberMe(// let through only strings
                     array_filter(
-                        $_COOKIES,
+                        $_COOKIE,
                         function ($item) {
                             return is_string($item);
                         }
@@ -163,7 +163,9 @@ class UserModel implements SeablastModelInterface
                 ];
             }
         }
-        throw new \Exception('Wrong HTTP request: ' . $this->superglobals->server['REQUEST_METHOD']);
+        throw new \Exception(
+            'Wrong HTTP request: ' . (string) print_r($this->superglobals->server['REQUEST_METHOD'], true)
+        );
     }
 
     /**

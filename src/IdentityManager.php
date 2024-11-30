@@ -348,7 +348,7 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Immediate login.
      *
-     * TODO try with social login
+     * If the email is trusted, e.g. the app got it through social login, just log in.
      *
      * @param string $email
      * @return void
@@ -384,7 +384,7 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Populates user attributes for user with the given email.
      *
-     * Also creates Session.
+     * Also creates a session.
      *
      * @param string $email
      * @return void
@@ -409,7 +409,7 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Populates user attributes for user with the given user_id.
      *
-     * Doesn't create session
+     * Doesn't create a session.
      *
      * @param int $userId
      * @return void

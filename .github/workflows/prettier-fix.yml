@@ -20,6 +20,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Invoke the Prettier fix
-        uses: WorkOfStan/prettier-fix@v1.0.3
-        #with:
-        #  node-version: "20"
+        uses: WorkOfStan/prettier-fix@v1.1.0
+        with:
+          commit-changes: true

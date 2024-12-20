@@ -8,6 +8,11 @@ Integrable via Composer, it activates only when required, equipping your app wit
 If your Seablast-based application necessitates user authentication or resource authorization, incorporating `Seablast\Auth` will equip it with these capabilities instantly.
 (For applications that do not require these features, `Seablast\Auth` can simple be not included to maintain a lighter application footprint.)
 
+## User management
+
+- user MUST have one role (admin, content manager, ordinary user)
+- user MAY belong to various groups (based on subscription tariff, a promotion, etc.)
+
 ## Usage
 
 When just getting the identity of a logged-in user is needed:
@@ -33,18 +38,21 @@ To create the expected database table structure, just add the seablast/auth migr
 
 ### Routing
 
-`/user` is expected, so configure it within your `conf/app.conf.php` like this:
+`/user` is the default route to the user log-in/log-out page, so configure it within your `conf/app.conf.php` like this:
 
 ```php
+        //->setString(AuthConstant::USER_ROUTE, '/user') // can be changed
         ->setArrayArrayString(
             SeablastConstant::APP_MAPPING,
             '/user',
             [
-                'template' => 'user', // your latte template including login-form.latter
+                'template' => 'user', // your latte template including login-form.latte
                 'model' => '\Seablast\Auth\UserModel',
             ]
         )
 ```
+
+Note: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php).
 
 ### View
 
@@ -62,8 +70,3 @@ Run [./test.sh](./test.sh) for essential PHPUnit tests:
 - check its disapperance as it's valid only once,
 - invalid emails is not accepted,
 - SQL injection attempts is not accepted.
-
-## User management
-
-- user MUST have one role (admin, content manager, ordinary user)
-- user MAY belong to various groups (based on subscription tariff, a promotion, etc.)

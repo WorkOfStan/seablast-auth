@@ -118,6 +118,8 @@ class GroupManager
         // Transform to int[]
         $groups = [];
         foreach ($result->fetch_all(MYSQLI_ASSOC) as $row) {
+            Assert::isArray($row);
+            Assert::scalar($row['group_id']);
             $groups[] = (int) $row['group_id'];
         }
         return $groups;

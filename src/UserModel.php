@@ -151,6 +151,8 @@ class UserModel implements SeablastModelInterface
                             'message' => 'Token mismatch.',
                     ];
                 }
+                // Assertion only for static analysis as it was already checked above with filter_var.
+                Assert::email($this->superglobals->post['email']);
                 // All is ok. Send the login email.
                 $this->sendLoginEmail(
                     $this->superglobals->post['email'],

@@ -9,11 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added` for new features
 
-- Prettier-fix.
-- UserException to identify user runtime exceptions.
-- Immediate loginWithTrustedEmail for social login plugins.
-- AuthConstant::USER_ROUTE
-
 ### `Changed` for changes in existing functionality
 
 ### `Deprecated` for soon-to-be removed features
@@ -23,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### `Fixed` for any bugfixes
 
 ### `Security` in case of vulnerabilities
+
+## [0.1.2] - 2024-12-20
+
+### Added
+
+- Prettier-fix.
+- UserException to identify user runtime exceptions.
+- Immediate IdentityManager::loginWithTrustedEmail() for social login plugins.
+- AuthConstant::USER_ROUTE , i.e. the route to the user log-in/log-out page is '/user' by default.
 
 ## [0.1.1] - 2024-06-03
 
@@ -45,5 +49,7 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1...v0.1.1
 [0.1]: https://github.com/WorkOfStan/seablast-auth/releases/tag/v0.1

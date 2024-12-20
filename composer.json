@@ -1,46 +1,50 @@
 {
-    "name": "seablast/auth",
-    "description": "No-password authentication and authorisation library for Seablast for PHP",
-    "type": "library",
-    "require": {
-        "php": "^7.2 || ^8.0", 
-        "nette/utils": "^2.4.8 || ^3.2.2",
-        "robmorgan/phinx": "^0.10.6 || ^0.12.3",
-        "seablast/interfaces": "^0.1",
-        "symfony/mailer": "^4.4.49 || ^5 || ^6 || ^7",
-        "symfony/security-csrf": "^4.4.37 || ^5 || ^6 || ^7",
-        "tracy/tracy": "^2.4.10",
-        "webmozart/assert": "^1.9.1"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^4 || ^5 || ^6 || ^7 || ^8 || ^9 || ^10",
-        "seablast/seablast": "^0.2.3.4"
-    },
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Stanislav Rejthar",
-            "email": "rejthar@stanislavrejthar.com"
-        }
-    ],
-    "support": {
-        "email": "rejthar@stanislavrejthar.com",
-        "issues": "https://github.com/WorkOfStan/seablast-auth/issues",
-        "source": "https://github.com/WorkOfStan/seablast-auth"
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true,
-    "config": {
-        "sort-packages": true
-    },
-    "autoload": {
-        "psr-4": {
-            "Seablast\\Auth\\": ["src/"]
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Seablast\\Auth\\Test\\": ["Test/"]
-        }
+  "name": "seablast/auth",
+  "description": "No-password authentication and authorisation library for Seablast for PHP",
+  "type": "library",
+  "require": {
+    "php": "^7.2 || ^8.0",
+    "nette/utils": "^2.4.8 || ^3.2.2",
+    "robmorgan/phinx": "^0.10.6 || ^0.12.3",
+    "seablast/interfaces": "^0.1",
+    "symfony/mailer": "^4.4.49 || ^5 || ^6 || ^7",
+    "symfony/security-csrf": "^4.4.37 || ^5 || ^6 || ^7",
+    "tracy/tracy": "^2.4.10",
+    "webmozart/assert": "^1.9.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^4 || ^5 || ^6 || ^7 || ^8 || ^9 || ^10",
+    "seablast/seablast": "^0.2.5"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Stanislav Rejthar",
+      "email": "rejthar@stanislavrejthar.com"
     }
+  ],
+  "support": {
+    "email": "rejthar@stanislavrejthar.com",
+    "issues": "https://github.com/WorkOfStan/seablast-auth/issues",
+    "source": "https://github.com/WorkOfStan/seablast-auth"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "config": {
+    "sort-packages": true
+  },
+  "autoload": {
+    "psr-4": {
+      "Seablast\\Auth\\": [
+        "src/"
+      ]
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Seablast\\Auth\\Test\\": [
+        "Test/"
+      ]
+    }
+  }
 }

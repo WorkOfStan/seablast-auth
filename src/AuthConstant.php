@@ -11,13 +11,13 @@ namespace Seablast\Auth;
 class AuthConstant
 {
     /**
-     * @var string Text of login email (%URL% will be replace by the login URL)
+     * @var string Facebook App ID
      */
-    public const TEXT_EMAIL_LOGIN = 'AuthApp:TEXT_EMAIL_LOGIN';
+    public const FACEBOOK_APP_ID = 'AuthApp:FACEBOOK_APP_ID';
     /**
-     * @var string Text of registration email (%URL% will be replace by the activation URL)
+     * @var string Facebook App ID
      */
-    public const TEXT_EMAIL_REGISTRATION = 'AuthApp:TEXT_EMAIL_REGISTRATION';
+    public const GOOGLE_CLIENT_ID = 'AuthApp:GOOGLE_CLIENT_ID';
     /**
      * @var string Subject of login email
      */
@@ -26,4 +26,16 @@ class AuthConstant
      * @var string Subject of registration email
      */
     public const SUBJECT_EMAIL_REGISTRATION = 'AuthApp:SUBJECT_EMAIL_REGISTRATION';
+    /**
+     * @var string Text of login email (%URL% will be replace by the login URL)
+     */
+    public const TEXT_EMAIL_LOGIN = 'AuthApp:TEXT_EMAIL_LOGIN';
+    /**
+     * @var string Text of registration email (%URL% will be replace by the activation URL)
+     */
+    public const TEXT_EMAIL_REGISTRATION = 'AuthApp:TEXT_EMAIL_REGISTRATION';
+    /**
+     * @var string Route to the page where user can log in/log out
+     */
+    public const USER_ROUTE = 'AuthApp:USER_ROUTE';
 }

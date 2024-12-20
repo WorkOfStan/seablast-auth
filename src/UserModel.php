@@ -40,6 +40,8 @@ class UserModel implements SeablastModelInterface
     private $superglobals;
     /** @var IdentityManager */
     private $user;
+    /** @var string Route to the user log-in/log-out page */
+    private $userRoute;
 
     /**
      *
@@ -50,6 +52,7 @@ class UserModel implements SeablastModelInterface
     {
         $this->configuration = $configuration;
         $this->superglobals = $superglobals;
+        $this->userRoute = $this->configuration->getString(AuthConstant::USER_ROUTE);
         $this->user = new IdentityManager($this->configuration->dbms());
         $this->user->setTablePrefix($this->configuration->dbmsTablePrefix());
     }
@@ -66,13 +69,13 @@ class UserModel implements SeablastModelInterface
                 $this->user->logout();
                 return (object) [
                         'redirectionUrl' => $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
-                        . '/user', // Todo go home instead?
+                        . $this->userRoute, // Todo go home instead?
                 ];
             }
             return (object) [
                     'showLogin' => false,
                     'showLogout' => true,
-                    'message' => 'Již jste přihlášeni jako ' . $this->user->getEmail() . ', užijte si to',
+                    'message' => 'Nyní jste přihlášeni jako ' . $this->user->getEmail() . ', užijte si to.',
             ];
         }
         if ($this->superglobals->server['REQUEST_METHOD'] === 'GET') {
@@ -90,7 +93,8 @@ class UserModel implements SeablastModelInterface
                     // todo go to the original target insted of /user
                     return (object) [
                             'redirectionUrl' =>
-                            $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL) . '/user',
+                            $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
+                            . $this->userRoute,
                     ];
                 }
                 return (object) [
@@ -100,11 +104,20 @@ class UserModel implements SeablastModelInterface
                 ];
             }
             // auto re-login attempt
-            if ($this->user->doYouRememberMe($_COOKIE)) {
+            if (
+                $this->user->doYouRememberMe(// let through only strings
+                    array_filter(
+                        $_COOKIE,
+                        function ($item) {
+                            return is_string($item);
+                        }
+                    )
+                )
+            ) {
                 Debugger::barDump('Auto-relogin.');
                 return (object) [// exactly the same as with valid token
                         'redirectionUrl' =>
-                        $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL) . '/user',
+                        $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL) . $this->userRoute,
                 ];
             }
             // první přístup
@@ -138,6 +151,8 @@ class UserModel implements SeablastModelInterface
                             'message' => 'Token mismatch.',
                     ];
                 }
+                // Assertion only for static analysis as it was already checked above with filter_var.
+                Assert::email($this->superglobals->post['email']);
                 // All is ok. Send the login email.
                 $this->sendLoginEmail(
                     $this->superglobals->post['email'],
@@ -146,12 +161,14 @@ class UserModel implements SeablastModelInterface
                 return (object) [
                         'showLogin' => false,
                         'showLogout' => false,
-                        'message' => 'Na zadaný email vám přijde přihlašovací adresa. Proklikněte jí.'
+                        'message' => 'Na zadaný email vám přijde přihlašovací odkaz. Proklikněte ho.'
                         . ' Žádná hesla nejsou třeba.',
                 ];
             }
         }
-        throw new \Exception('Wrong HTTP request: ' . $this->superglobals->server['REQUEST_METHOD']);
+        throw new \Exception(
+            'Wrong HTTP request: ' . (string) print_r($this->superglobals->server['REQUEST_METHOD'], true)
+        );
     }
 
     /**
@@ -166,7 +183,7 @@ class UserModel implements SeablastModelInterface
     private function sendLoginEmail(string $emailAddress, string $token): void
     {
         $loginUrl = $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
-            . '/user/?token=' . $token; // TODO session should keep the original target URL - deep loging
+            . $this->userRoute . '/?token=' . $token; // TODO session should keep the original target URL - deep loging
         Debugger::barDump($loginUrl, $this->user->isNewUser() ? 'registerUrl' : 'loginUrl');
         $plainText = str_replace(
             '%URL%',

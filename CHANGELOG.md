@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added` for new features
 
+- UserModel exception hints on POST API call requiring authentication
+
 ### `Changed` for changes in existing functionality
+
+- GitHub Action polish-the-code.yml replaces linter.yml, php-composer-dependecies.yml, prettier-fix.yml and phpcbf.yml
 
 ### `Deprecated` for soon-to-be removed features
 

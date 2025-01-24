@@ -329,7 +329,7 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Logic for the user login. Validate email and return a token to be sent by email.
      *
-     * TODO allow inserting the token to an input box.
+     * TODO allow inserting the token to an HTML input field.
      *
      * @param string $email
      * @return string

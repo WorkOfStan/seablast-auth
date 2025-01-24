@@ -15,7 +15,6 @@ use Webmozart\Assert\Assert;
  * - group: id, created, name_public, internal_notes
  * - user_group: id,created,user_id (foreign id),group_id (foreign id)
  * - group_activation_tokens: id,created,group_id (foreign id),valid_from,valid_to,token
- *
  */
 class GroupManager
 {
@@ -28,10 +27,10 @@ class GroupManager
     /** @var int */
     private $userId;
 
-    public const ACTIVATION_WRONG_TOKEN = 401; // wrong_token
     public const ACTIVATION_ALREADY = 304; // already_activated
-    public const ACTIVATION_NEW = 200; // new_activation
     public const ACTIVATION_FAILED = 500; // activation_failed
+    public const ACTIVATION_NEW = 200; // new_activation
+    public const ACTIVATION_WRONG_TOKEN = 401; // wrong_token
 
     /**
      * @param \mysqli $dbms

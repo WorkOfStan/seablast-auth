@@ -166,8 +166,9 @@ class UserModel implements SeablastModelInterface
                 ];
             }
         }
-        throw new \Exception(
+        throw new \RuntimeException(
             'Wrong HTTP request: ' . (string) print_r($this->superglobals->server['REQUEST_METHOD'], true)
+            . ' (or POST API call requires authentication)'
         );
     }
 
@@ -213,7 +214,7 @@ class UserModel implements SeablastModelInterface
                 $this->user->isNewUser() ? AuthConstant::SUBJECT_EMAIL_REGISTRATION : AuthConstant::SUBJECT_EMAIL_LOGIN
             ))
             ->text($plainText)
-        //->html('<p>See Twig integration for better HTML integration!</p>')
+            //->html('<p>See Twig integration for better HTML integration!</p>')
         ;
         $mailer->send($emailInstance);
         Debugger::barDump($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS), 'Email sent from');

@@ -14,7 +14,7 @@ use Tracy\Debugger;
 class IdentityManagerTest extends TestCase
 {
     /** @var \mysqli */
-    private $dbms;
+    private $mysqli;
     /** @var IdentityManager */
     protected $user;
 
@@ -28,8 +28,8 @@ class IdentityManagerTest extends TestCase
         }
         $setup = new SeablastSetup(); // combine configuration files into a valid configuration
         $setup->getConfiguration()->setString(SeablastConstant::SB_PHINX_ENVIRONMENT, 'testing');
-        $this->dbms = $setup->getConfiguration()->dbms();
-        $this->user = new IdentityManager($this->dbms);
+        $this->mysqli = $setup->getConfiguration()->dbms();
+        $this->user = new IdentityManager($this->mysqli);
         $this->user->setTablePrefix($setup->getConfiguration()->dbmsTablePrefix());
     }
 

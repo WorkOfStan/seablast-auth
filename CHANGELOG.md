@@ -9,11 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added` for new features
 
-- UserModel exception hints on POST API call requiring authentication
-
 ### `Changed` for changes in existing functionality
-
-- GitHub Action polish-the-code.yml replaces linter.yml, php-composer-dependecies.yml, prettier-fix.yml and phpcbf.yml
 
 ### `Deprecated` for soon-to-be removed features
 
@@ -22,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### `Fixed` for any bugfixes
 
 ### `Security` in case of vulnerabilities
+
+## [0.1.3] - 2025-02-01
+
+### Added
+
+- UserModel exception hints on POST API call requiring authentication
+
+### Changed
+
+- GitHub Action polish-the-code.yml replaces linter.yml, php-composer-dependecies.yml, prettier-fix.yml and phpcbf.yml
+- **BREAKING CHANGE** migration renamed to DefaultUserRoles as it concerns Roles, not Groups
 
 ## [0.1.2] - 2024-12-20
 
@@ -53,7 +60,8 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1...v0.1.1
 [0.1]: https://github.com/WorkOfStan/seablast-auth/releases/tag/v0.1

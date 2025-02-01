@@ -21,7 +21,7 @@ class GroupManager
     use \Nette\SmartObject;
 
     /** @var \mysqli */
-    private $dbms;
+    private $mysqli;
     /** @var string */
     private $tablePrefix;
     /** @var int */
@@ -33,13 +33,13 @@ class GroupManager
     public const ACTIVATION_WRONG_TOKEN = 401; // wrong_token
 
     /**
-     * @param \mysqli $dbms
+     * @param \mysqli $mysqli
      * @param int $userId
      * @param string $tablePrefix
      */
-    public function __construct(\mysqli $dbms, int $userId, string $tablePrefix = '')
+    public function __construct(\mysqli $mysqli, int $userId, string $tablePrefix = '')
     {
-        $this->dbms = $dbms;
+        $this->mysqli = $mysqli;
         $this->tablePrefix = $tablePrefix;
         $this->userId = $userId;
     }
@@ -58,8 +58,8 @@ class GroupManager
     public function activateGroupByToken(string $token): int
     {
         // Check token validity
-        $resultToken = $this->dbms->query('SELECT * FROM `' . $this->tablePrefix
-            . 'group_activation_tokens` WHERE token = "' . $this->dbms->real_escape_string($token)
+        $resultToken = $this->mysqli->query('SELECT * FROM `' . $this->tablePrefix
+            . 'group_activation_tokens` WHERE token = "' . $this->mysqli->real_escape_string($token)
             . '" AND valid_from <= NOW() AND valid_to >= NOW();');
         if (is_bool($resultToken)) {
             throw new DbmsException('Db expected.');
@@ -71,7 +71,7 @@ class GroupManager
         }
 
         // Check if already activated
-        $resultUserGroup = $this->dbms->query('SELECT * FROM `' . $this->tablePrefix . 'user_group` WHERE user_id = '
+        $resultUserGroup = $this->mysqli->query('SELECT * FROM `' . $this->tablePrefix . 'user_group` WHERE user_id = '
             . (int) $this->userId . ' AND group_id = ' . (int) $tokenData['group_id'] . ';');
         if (is_bool($resultUserGroup)) {
             throw new \Exception('Db expected.');
@@ -91,7 +91,7 @@ class GroupManager
      */
     public function addUserToGroup(int $groupId): bool
     {
-        return (bool) $this->dbms->query(
+        return (bool) $this->mysqli->query(
             'INSERT INTO `' . $this->tablePrefix . 'user_group` (created, user_id, group_id) VALUES (NOW(), '
             . (int) $this->userId . ', ' . (int) $groupId . ');'
         );
@@ -107,7 +107,7 @@ class GroupManager
      */
     public function getGroupsByUserId(): array
     {
-        $result = $this->dbms->query(
+        $result = $this->mysqli->query(
             'SELECT ug.group_id FROM `' . $this->tablePrefix . 'group` g INNER JOIN `' . $this->tablePrefix
             . 'user_group` ug ON g.id = ug.group_id  WHERE ug.user_id = ' . (int) $this->userId . ';'
         ); // TODO maybe just `WHERE user_id` would be sufficient. Or I want group name as well here?
@@ -135,7 +135,7 @@ class GroupManager
     public function removeUserFromGroup(int $groupId): void
     {
         Assert::true(
-            $this->dbms->query(
+            $this->mysqli->query(
                 'DELETE FROM `' . $this->tablePrefix . 'user_group` WHERE user_id = '
                 . (int) $this->userId . '  AND group_id = ' . (int) $groupId . ';'
             )

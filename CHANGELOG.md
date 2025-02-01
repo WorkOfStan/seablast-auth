@@ -61,7 +61,7 @@ IdentityManager and GroupManager
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
 [Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.3...HEAD
-[0.1.2]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.2...v0.1.3
+[0.1.3]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1...v0.1.1
 [0.1]: https://github.com/WorkOfStan/seablast-auth/releases/tag/v0.1

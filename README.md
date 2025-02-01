@@ -10,7 +10,7 @@ If your Seablast-based application necessitates user authentication or resource 
 
 ## User management
 
-- user MUST have one role (admin, content manager, ordinary user)
+- user MUST have one role (admin, editor, ordinary user)
 - user MAY belong to various groups (based on subscription tariff, a promotion, etc.)
 
 ## Usage

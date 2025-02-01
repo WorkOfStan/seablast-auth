@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Phinx\Migration\AbstractMigration;
 
-final class DefaultUserGroups extends AbstractMigration
+final class DefaultUserRoles extends AbstractMigration
 {
     /**
      * Change Method.
@@ -26,7 +26,7 @@ final class DefaultUserGroups extends AbstractMigration
             ],
             [
                 'id' => 2,
-                'name' => 'content'
+                'name' => 'editor'
             ],
             [
                 'id' => 3,

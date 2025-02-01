@@ -30,14 +30,14 @@ class IdentityManager implements IdentityManagerInterface
     private $cookieDomain;
     /** @var string Path for cookies. */
     private $cookiePath;
-    /** @var \mysqli Database connection. */
-    private $dbms;
     /** @var string User email. */
     private $email;
     /** @var bool Authentication status. */
     private $isAuthenticated = false;
     /** @var ?bool Flag indicating if the user trying to authenticate is a new user. */
     private $isNewUser = null;
+    /** @var \mysqli Database connection. */
+    private $mysqli;
     /** @var int Role ID of the user. */
     private $roleId;
     /** @var string Table prefix for SQL queries. */
@@ -48,11 +48,11 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Constructor for IdentityManager.
      *
-     * @param \mysqli $dbms Database management system to use.
+     * @param \mysqli $mysqli Database management system to use.
      */
-    public function __construct(\mysqli $dbms)
+    public function __construct(\mysqli $mysqli)
     {
-        $this->dbms = $dbms;
+        $this->mysqli = $mysqli;
         $this->cookiePath = '/'; // todo limit
         $this->cookieDomain = ''; // todo extract
     }
@@ -69,13 +69,13 @@ class IdentityManager implements IdentityManagerInterface
         // Select email From users and if nothing returned, then INSERT email INTO users
         // (Note never loggedin users older than 15 minutes are destroyed) <- TODO
         Assert::email($email); // TODO more specific Exception to catch exactly it in a PHPUnit test
-        $result = $this->dbms->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '"
+        $result = $this->mysqli->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '"
             . (string) $email . "';");
         if (is_bool($result) || !$result->fetch_assoc()) {
-            $this->dbms->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . (string) $email
+            $this->mysqli->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . (string) $email
                 . "', CURRENT_TIMESTAMP);"); // todo assert insert doesn't fail
             // Note: If the number is greater than maximal int value, mysqli_insert_id() will return a string.
-            $this->userId = (int) $this->dbms->insert_id;
+            $this->userId = (int) $this->mysqli->insert_id;
             $this->isNewUser = true;
         } else {
             $this->isNewUser = false;
@@ -94,7 +94,7 @@ class IdentityManager implements IdentityManagerInterface
         // insert uniqid to the sessionId field and userId into userId field of the session_user table
         $sessionId = uniqid('', true); // todo maybe also generateToken()???
         $rememberMeToken = $this->generateToken();
-        $this->dbms->query("INSERT INTO `{$this->tablePrefix}session_user` (user_id, token, updated) VALUES ("
+        $this->mysqli->query("INSERT INTO `{$this->tablePrefix}session_user` (user_id, token, updated) VALUES ("
             . (int) $userId . ", '" . $sessionId . "', CURRENT_TIMESTAMP), (" . (int) $userId
             . ", '" . $rememberMeToken . "', CURRENT_TIMESTAMP);");
         // todo assert insert doesn't fail
@@ -132,8 +132,8 @@ class IdentityManager implements IdentityManagerInterface
             return false;
         }
         // delete the old cookie id from session_user as new one will be set in createSessionId anyway
-        $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId
-            . " AND token = '" . $this->dbms->real_escape_string($cookie['sbRememberMe']) . "';");
+        $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId
+            . " AND token = '" . $this->mysqli->real_escape_string($cookie['sbRememberMe']) . "';");
         $this->createSessionId($userId); // incidentally also updates the RM cookie
         return true;
     }
@@ -147,9 +147,9 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function fetchFirstRow(string $query): ?array
     {
-        $result = $this->dbms->query($query);
+        $result = $this->mysqli->query($query);
         if ($result === false) {
-            throw new DbmsException($this->dbms->errno . ': ' . $this->dbms->error);
+            throw new DbmsException($this->mysqli->errno . ': ' . $this->mysqli->error);
         } elseif (is_bool($result)) {
             return null;
         }
@@ -195,7 +195,7 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function getGroups(): array
     {
-        $groups = new GroupManager($this->dbms, $this->userId, $this->tablePrefix);
+        $groups = new GroupManager($this->mysqli, $this->userId, $this->tablePrefix);
         return $groups->getGroupsByUserId();
     }
 
@@ -240,7 +240,7 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function getUserForSessionId(string $sessionToken, int $days = 1): ?int
     {
-        $sessionTokenEscaped = $this->dbms->real_escape_string($sessionToken);
+        $sessionTokenEscaped = $this->mysqli->real_escape_string($sessionToken);
         // Calculate $days from now in PHP instead of `NOW() - INTERVAL` in order to cache the SQL responses
         $oneDayTillNow = new DateTime('-' . $days . ' day');
         // Regardless of rounding up, reset minutes (and seconds) to 0
@@ -255,7 +255,7 @@ class IdentityManager implements IdentityManagerInterface
         // Update last access
         // TODO prolongate session only if the previous access is older than 5 minutes to reduce SQL load
         Debugger::barDump($row, 'User for session'); // debug
-        $this->dbms->query("UPDATE `{$this->tablePrefix}session_user` SET updated = CURRENT_TIMESTAMP WHERE token = '"
+        $this->mysqli->query("UPDATE `{$this->tablePrefix}session_user` SET updated = CURRENT_TIMESTAMP WHERE token = '"
             . $sessionTokenEscaped . "';");
         return (int) $row['user_id'];
     }
@@ -317,9 +317,9 @@ class IdentityManager implements IdentityManagerInterface
             return false;
         }
         // Token is one time only
-        $this->dbms->query("DELETE FROM `{$this->tablePrefix}email_token` WHERE id = " . (int) $row['id'] . ";");
+        $this->mysqli->query("DELETE FROM `{$this->tablePrefix}email_token` WHERE id = " . (int) $row['id'] . ";");
          // Update last_access
-        $this->dbms->query("UPDATE `{$this->tablePrefix}users` SET last_login = CURRENT_TIMESTAMP WHERE email = '"
+        $this->mysqli->query("UPDATE `{$this->tablePrefix}users` SET last_login = CURRENT_TIMESTAMP WHERE email = '"
             . (string) $row['email'] . "';");
 
         $this->populateUserByEmail((string) $row['email']);
@@ -339,7 +339,7 @@ class IdentityManager implements IdentityManagerInterface
         $this->checkEmailOrCreateUser($email);
         $token = $this->generateToken();
         // Generate and store a token for this email
-        $this->dbms->query("INSERT INTO `{$this->tablePrefix}email_token` (email, token, created) VALUES ('"
+        $this->mysqli->query("INSERT INTO `{$this->tablePrefix}email_token` (email, token, created) VALUES ('"
             . (string) $email . "', '" . (string) $token . "', CURRENT_TIMESTAMP);");
         // todo assert insert doesn't fail
         return $token;
@@ -369,14 +369,14 @@ class IdentityManager implements IdentityManagerInterface
     public function logout(): void
     {
         Assert::string($_SESSION['sbSessionToken']);
-        $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
+        $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
             . $_SESSION['sbSessionToken'] . "';");
         unset($_SESSION['sbSessionToken']);
         // todo remove csrf tokens from this browser context
         // Remove "Remember Me" cookie if it exists both from database and from cookies
         if (isset($_COOKIE['sbRememberMe'])) {
             Assert::string($_COOKIE['sbRememberMe']);
-            $this->dbms->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
+            $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
                 . (string) $_COOKIE['sbRememberMe'] . "';");
             setcookie('sbRememberMe', '', time() - 3600, $this->cookiePath, $this->cookieDomain, true, true);
         }

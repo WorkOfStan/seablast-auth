@@ -53,7 +53,7 @@ jobs:
     steps:
       - name: Invoke the PHPCS check and PHPCBF fix
         # Use the latest commit in the main branch.
-        uses: WorkOfStan/phpcs-fix@v1.0.0
+        uses: WorkOfStan/phpcs-fix@v1.0.1
         with:
           commit-changes: true
           php-version: "7.4"

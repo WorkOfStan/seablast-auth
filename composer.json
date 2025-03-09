@@ -5,15 +5,15 @@
   "require": {
     "php": "^7.2 || ^8.0",
     "nette/utils": "^3.2.10 || ^4.0.5",
-    "robmorgan/phinx": "^0.10.6 || ^0.12.3",
+    "robmorgan/phinx": "^0.12.13 || ^0.13.4 || ^0.14.0 || ^0.15.5 || ^0.16.5",
     "seablast/interfaces": "^0.1",
     "symfony/mailer": "^4.4.49 || ^5 || ^6 || ^7",
     "symfony/security-csrf": "^4.4.37 || ^5 || ^6 || ^7",
-    "tracy/tracy": "^2.4.10",
-    "webmozart/assert": "^1.9.1"
+    "tracy/tracy": "^2.9.8 || ^2.10.9",
+    "webmozart/assert": "^1.10.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "^4 || ^5 || ^6 || ^7 || ^8 || ^9 || ^10",
+    "phpunit/phpunit": "^8.4 || ^9 || ^10 || ^11 || ^12",
     "seablast/seablast": "^0.2.5"
   },
   "license": "MIT",

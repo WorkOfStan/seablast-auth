@@ -48,7 +48,7 @@ final class User extends AbstractMigration
             ->create();
 
         $sessionUser = $this->table('session_user');
-        $sessionUser->addColumn('user_id', 'integer')
+        $sessionUser->addColumn('user_id', 'integer', ['signed' => false])
             ->addColumn('token', 'string', ['limit' => 255])
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->addColumn('updated', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])

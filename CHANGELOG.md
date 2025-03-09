@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - PHP/8.4 support
+- For a foreign key referencing a table id, the referencing column must be of the same type—namely, an unsigned integer.
 
 ## [0.1.3] - 2025-02-01
 

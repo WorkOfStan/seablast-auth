@@ -51,6 +51,8 @@ class GroupManager
      * following responses:
      *  - wrong token / already activated / new activation
      *
+     * TODO: the $token comparison is case-insensitive. Make it explicit.
+     *
      * @param string $token
      * @return int self::ACTIVATION constant mimicking the HTTP response codes
      * @throws DbmsException on database statement error
@@ -117,7 +119,6 @@ class GroupManager
         // Transform to int[]
         $groups = [];
         foreach ($result->fetch_all(MYSQLI_ASSOC) as $row) {
-            Assert::isArray($row);
             Assert::scalar($row['group_id']);
             $groups[] = (int) $row['group_id'];
         }

@@ -15,7 +15,11 @@ class AuthConstant
      */
     public const FACEBOOK_APP_ID = 'AuthApp:FACEBOOK_APP_ID';
     /**
-     * @var string Facebook App ID
+     * @var string Flag: Social login custom button instead of native one
+     */
+    public const FLAG_SOCIAL_LOGIN_CUSTOM = 'AuthApp:FLAG_SOCIAL_LOGIN_CUSTOM';
+    /**
+     * @var string Google Client ID
      */
     public const GOOGLE_CLIENT_ID = 'AuthApp:GOOGLE_CLIENT_ID';
     /**

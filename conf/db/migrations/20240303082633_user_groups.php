@@ -27,16 +27,16 @@ final class UserGroups extends AbstractMigration
 
         $this->table('user_group')
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
-            ->addColumn('user_id', 'integer')
+            ->addColumn('user_id', 'integer', ['signed' => false])
             ->addForeignKey('user_id', 'users', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
-            ->addColumn('group_id', 'integer')
+            ->addColumn('group_id', 'integer', ['signed' => false])
             ->addForeignKey('group_id', 'group', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
             ->addIndex(['user_id'])
             ->create();
 
         $this->table('group_activation_tokens')
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
-            ->addColumn('group_id', 'integer')
+            ->addColumn('group_id', 'integer', ['signed' => false])
             ->addForeignKey('group_id', 'group', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
             ->addColumn('valid_from', 'datetime')
             ->addColumn('valid_to', 'datetime')

@@ -35,7 +35,7 @@ final class User extends AbstractMigration
         $users->addColumn('email', 'string', ['limit' => 255])
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->addColumn('last_login', 'timestamp', ['null' => true, 'default' => null])
-            ->addColumn('role_id', 'integer')
+            ->addColumn('role_id', 'integer', ['signed' => false])
             ->addForeignKey('role_id', 'roles', 'id', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
             ->addIndex(['email'], ['unique' => true]) // Add a unique index on the 'email' column
             ->create();
@@ -48,7 +48,7 @@ final class User extends AbstractMigration
             ->create();
 
         $sessionUser = $this->table('session_user');
-        $sessionUser->addColumn('user_id', 'integer')
+        $sessionUser->addColumn('user_id', 'integer', ['signed' => false])
             ->addColumn('token', 'string', ['limit' => 255])
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->addColumn('updated', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])

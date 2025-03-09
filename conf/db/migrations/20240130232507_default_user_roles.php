@@ -38,7 +38,7 @@ final class DefaultUserRoles extends AbstractMigration
 
         // Alter 'users' table to set default roleId to 3 ('user')
         $table = $this->table('users');
-        $table->changeColumn('role_id', 'integer', ['default' => 3])
+        $table->changeColumn('role_id', 'integer', ['signed' => false, 'default' => 3])
             ->update();
     }
 
@@ -46,7 +46,7 @@ final class DefaultUserRoles extends AbstractMigration
     {
         // Remove the default value from 'role_id' column
         $table = $this->table('users');
-        $table->changeColumn('role_id', 'integer', ['default' => null])
+        $table->changeColumn('role_id', 'integer', ['signed' => false, 'default' => null])
             ->update();
 
         $this->execute('DELETE FROM roles WHERE id IN (1, 2, 3)');

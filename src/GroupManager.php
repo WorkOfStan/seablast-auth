@@ -105,17 +105,17 @@ class GroupManager
      * Called typically during authentication.
      *
      * @return int[]
-     * @//throws DbmsException on database statement error
+     * @throws DbmsException on database statement error
      */
     public function getGroupsByUserId(): array
     {
-        $result = $this->mysqli->queryStrict(
+        $result = $this->mysqli->query(
             'SELECT ug.group_id FROM `' . $this->tablePrefix . 'group` g INNER JOIN `' . $this->tablePrefix
             . 'user_group` ug ON g.id = ug.group_id  WHERE ug.user_id = ' . (int) $this->userId . ';'
         ); // TODO maybe just `WHERE user_id` would be sufficient. Or I want group name as well here?
-        //if (is_bool($result)) {
-        //    throw new DbmsException('Db expected.');
-        //}
+        if (is_bool($result)) {
+            throw new DbmsException('Db expected.');
+        }
         // Transform to int[]
         $groups = [];
         foreach ($result->fetch_all(MYSQLI_ASSOC) as $row) {

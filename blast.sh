@@ -23,7 +23,7 @@ display_warning() { printf "${WARNING}%s${NC}\n" "$1"; }
 BASE_URL="http://localhost"
 
 # Default paths for web inaccessibility checks
-DEFAULT_PATHS=("conf" "log" "src")
+DEFAULT_PATHS=("conf" "log" "src" "tests" "views")
 
 # Function to check web inaccessibility
 check_web_inaccessibility() {

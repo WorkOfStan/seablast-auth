@@ -54,9 +54,9 @@ To create the expected database table structure, just add the seablast/auth migr
 
 Note: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php).
 
-TODO - add description also of the views
+Todo - add description also of the views
 
-- // /api/social-login is a single end-point , differentiation by provider is done in the parameter provider;
+- // /api/social-login is a single endpoint , differentiation by provider is done in the parameter provider;
 - // so far just facebook, google
 
 ### View

@@ -1,0 +1,17 @@
+{layout 'BlueprintProtokronika.latte'} {* just a demo for Facebook evaluators; user.latte to be used by customers *}
+{block mainblock}
+{if $configuration->flag->status('SB:USER_IS_AUTHENTICATED')}
+    <!-- Link to trigger logout -->
+    <a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/?logout">Odhlásit se</a>
+{else}
+    Přihlásit se:
+    {include './login-social-facebook-html.latte'}
+{/if}
+
+{/block}
+{block script}
+{include './login-social-facebook-script.latte'}
+{if !$configuration->flag->status('SB:USER_IS_AUTHENTICATED')}
+    {include './login-social-common-script.latte'}
+{/if}
+{/block}

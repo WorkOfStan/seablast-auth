@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+feat: ApiSocialLoginModel and related views
+
 ### `Added` for new features
 
+- ApiSocialLoginModel and related views
+
 ### `Changed` for changes in existing functionality
+
+- GitHub Actions version bump
+- PHPUnit test folder renamed Test -> tests
 
 ### `Deprecated` for soon-to-be removed features
 
@@ -17,9 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed` for any bugfixes
 
+- .htaccess in Apache2.4 syntax
+
 ### `Security` in case of vulnerabilities
 
 ## [0.1.4] - 2025-03-09
+
+chore: PHP/8.4 support
 
 ### Changed
 

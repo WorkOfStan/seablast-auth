@@ -1,6 +1,6 @@
 <?php
 
-namespace Seablast\Auth\Test;
+namespace Seablast\Auth\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Seablast\Auth\IdentityManager;

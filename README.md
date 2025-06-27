@@ -3,7 +3,7 @@
 A no-password authentication and authorization extension for [Seablast for PHP](https://github.com/WorkOfStan/seablast) apps.
 This extension facilitates secure user verification and efficient access control.
 
-Optionally, `Seablast\Auth` integrates with the HybridAuth library (actually it's not maintained so other venues must be explored) to support social authentication, allowing seamless sign-in through various social media platforms.
+Optionally, `Seablast\Auth` has a ligthweight integration with Google and Facebook to support social authentication, allowing seamless sign-in through various social media platforms.
 Integrable via Composer, it activates only when required, equipping your app with essential security features effortlessly.
 If your Seablast-based application necessitates user authentication or resource authorization, incorporating `Seablast\Auth` will equip it with these capabilities instantly.
 (For applications that do not require these features, `Seablast\Auth` can simple be not included to maintain a lighter application footprint.)
@@ -54,6 +54,10 @@ To create the expected database table structure, just add the seablast/auth migr
 
 Note: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php).
 
+TODO - add description also of the views
+- // /api/social-login is a single end-point , differentiation by provider is done in the parameter provider;
+- // so far just facebook, google
+
 ### View
 
 `\Seablast\Auth\UserModel` returns arguments ($configuration, $csrfToken, $message, $showLogin, $showLogout) for the user.latte template:
@@ -61,6 +65,10 @@ Note: already Seablast::v0.2.5 is using the default settings in the [conf/app.co
 ```latte
 {include '../vendor/seablast/auth/views/login-form.latte'}
 ```
+
+### Social login
+
+Existence of configuration strings 'FACEBOOK_APP_ID' or 'GOOGLE_CLIENT_ID' imply option to login by these platforms respectively.
 
 ## Testing
 

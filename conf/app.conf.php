@@ -28,6 +28,15 @@ return static function (SeablastConfiguration $SBConfig): void {
 //                'model' => '\Seablast\Auth\Models\ApiGoogleLoginModel',
 //            ]
 //        )
+        // /api/social-login is a single end-point , differentiation by provider is done in the parameter provider;
+        // so far just facebook, google
+        ->setArrayArrayString(
+            SeablastConstant::APP_MAPPING,
+            '/api/social-login',
+            [
+                'model' => '\Seablast\Auth\Models\ApiSocialLoginModel',
+            ]
+        )
         // Database
         //    ->setString(SeablastConstant::SB_PHINX_ENVIRONMENT, 'testing')
         // Expected route for the page where user can log-in/log-out

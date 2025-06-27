@@ -1,0 +1,13 @@
+{if $configuration->flag->status('AuthApp:FLAG_SOCIAL_LOGIN_CUSTOM')}
+    <!-- Custom Facebook login button -->
+    <button id="custom-fb-btn">Login with Facebook</button>
+{else}
+    <!-- Facebook Login Button --> {* https://developers.facebook.com/docs/facebook-login/web/login-button *}
+    <fb:login-button 
+        scope="public_profile,email"
+        onlogin="checkFacebookLoginState();"
+        use-continue-as="true"
+        size="large"
+        >
+    </fb:login-button>
+{/if}

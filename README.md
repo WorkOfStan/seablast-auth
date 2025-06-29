@@ -58,18 +58,25 @@ Todo - add description also of the views
 
 - // /api/social-login is a single endpoint , differentiation by provider is done in the parameter provider;
 - // so far just facebook, google
+- remove facebook.latte, google.latte, eventually also facebook-custom.latte and google-custom.latte
 
 ### View
 
 `\Seablast\Auth\UserModel` returns arguments ($configuration, $csrfToken, $message, $showLogin, $showLogout) for the user.latte template:
 
 ```latte
-{include '../vendor/seablast/auth/views/login-form.latte'}
+{include '../vendor/seablast/auth/views/user-control.latte'}
 ```
+
+Note 1: user.latte uses inherite.latte for all the latte parts, so either you may use it or include user-control.latte or create app version of any of the latte parts.
+
+Note 2: vendor/seablast is accessible for Seablast apps, so the web browser assets (such as `send-auth-token.js`) used by plugins MUST be put into assets folder of the Seablast library.
 
 ### Social login
 
 Existence of configuration strings 'FACEBOOK_APP_ID' or 'GOOGLE_CLIENT_ID' imply option to login by these platforms respectively.
+
+Note: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
 
 ## Testing
 

@@ -2,7 +2,7 @@ RewriteEngine on
 # for RewriteRule below
 
 # Prevent directory listing
-#Options -Indexes
+Options -Indexes
 
 # Hide composer, logs
 # If mod_alias is not enabled, the Apache should fail to show anything in order to always hide the files in the section below

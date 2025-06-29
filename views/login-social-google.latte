@@ -37,6 +37,10 @@
             event.preventDefault();
             // Manually trigger the One Tap prompt
             google.accounts.id.prompt();
+            // Note: if user dismisses the OneTap prompt window in the LOGIN_CUSTOM mode, then GSI will console.error:
+            // User declined or dismissed prompt. API exponential cool down triggered.
+            // ... and stops displaying the OneTap prompt window.
+            // Switch to original mode and back to fix it.
           });
     {else}
       // Show One Tap prompt only if user is not logged in

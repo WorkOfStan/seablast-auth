@@ -10,9 +10,10 @@ use Seablast\Seablast\SeablastConfiguration;
 use Seablast\Seablast\SeablastConstant;
 
 return static function (SeablastConfiguration $SBConfig): void {
-    //$SBConfig->flag
-    //    ->activate(SeablastConstant::FLAG_WEB_RUNNING)
-    //;
+    $SBConfig->flag
+        //->activate(SeablastConstant::FLAG_WEB_RUNNING)
+        ->activate(AuthConstant::FLAG_USE_SOCIAL_LOGIN) // actual social login requires AuthApp:..social.._ID
+    ;
     $SBConfig
 //        ->setArrayArrayString(// TODO - move to Seablast? or Seablast/Auth?
 //            SeablastConstant::APP_MAPPING,

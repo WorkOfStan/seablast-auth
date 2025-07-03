@@ -1,0 +1,61 @@
+<script referrerpolicy="strict-origin-when-cross-origin">
+  const GOOGLE_CLIENT_ID ={$configuration->getString('AuthApp:GOOGLE_CLIENT_ID')};
+
+  // Function to determine if the user is logged in
+  function isUserLoggedInGoogle() {
+    // Example: Check login status in localStorage, cookies, or an API call
+    return localStorage.getItem('isLoggedInGoogle') === 'true';
+  }
+  // Initialize Google Identity Services to show One Tap only if the user is not logged in
+  window.onload = function () {
+    if (!isUserLoggedInGoogle()) {
+      //console.log('User not logged in, showing One Tap prompt.');
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredentialResponse,
+        auto_select: true
+      });
+    {if $configuration->flag->status('AuthApp:FLAG_SOCIAL_LOGIN_CUSTOM')}
+          // Attach event listener to custom button
+          const customBtn = document.getElementById('custom-google-btn');
+          customBtn.addEventListener('click', function(event) {
+            event.preventDefault();
+            // Manually trigger the One Tap prompt
+            google.accounts.id.prompt();
+            // Note: if user dismisses the OneTap prompt window in the LOGIN_CUSTOM mode, then GSI will console.error:
+            // User declined or dismissed prompt. API exponential cool down triggered.
+            // ... and stops displaying the OneTap prompt window.
+            // Switch to original mode and back to fix it.
+          });
+    {else}
+      // Show One Tap prompt only if user is not logged in
+      google.accounts.id.prompt();
+    {/if}
+    //} else {
+      //console.log('User is already logged in. One Tap prompt not shown.');
+    }
+  };
+  // Callback to handle the Google credential response
+  function handleGoogleCredentialResponse(response) {
+    if (response.credential) { // response.credential MUST exist and be a string
+      // Mark user as logged in (e.g., set in localStorage)
+      localStorage.setItem('isLoggedInGoogle', 'true');
+      passTokenToApi(response.credential, 'google');
+    } else {
+      console.error('Received invalid Google credential response:', response);
+    }
+  }
+  {* Note: server side logout should also trigger `localStorage.removeItem('isLoggedInGoogle');` to allow One Tap. Or it's solved by triggering it on user page within `n:if="$showLogin` element. *}
+//  // Sign out function - just from auto sign-in by Google, but it stays logged-in in Plyšonika. TODO fix that
+//  function googleSignOut() {
+//    localStorage.removeItem('isLoggedInGoogle'); // Clear login status
+//    if (typeof google !== 'undefined' && google.accounts) {
+//      google.accounts.id.disableAutoSelect();
+//      console.log('User signed out from app by Google.');
+//      // todo go to user?logout to log out the user from Plyšonika, as well
+//    } else {
+//      console.error('Google Accounts library not initialized or unavailable.');
+//    }
+//  }
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>

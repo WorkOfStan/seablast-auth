@@ -76,7 +76,9 @@ Note 2: vendor/seablast is accessible for Seablast apps, so the web browser asse
 
 Existence of configuration strings 'FACEBOOK_APP_ID' or 'GOOGLE_CLIENT_ID' imply option to login by these platforms respectively.
 
-Note: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
+Note 1: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
+
+Notee 2: The new Google Identity Services no longer open a traditional pop‑up account chooser; instead, it displays the One Tap UI.
 
 ## Testing
 

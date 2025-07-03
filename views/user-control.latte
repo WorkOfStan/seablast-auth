@@ -14,5 +14,8 @@
     {if $configuration->exists('AuthApp:FACEBOOK_APP_ID')}
     {include 'inherite.latte', latte => 'login-social-facebook-script.latte'}
     {/if}
+    {if $configuration->exists('AuthApp:GOOGLE_CLIENT_ID')}
+    {include 'inherite.latte', latte => 'login-social-google-script.latte'}
+    {/if}
     {include 'inherite.latte', latte => 'login-social-common-script.latte'}
 {/if}

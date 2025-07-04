@@ -12,6 +12,7 @@ feat: ApiSocialLoginModel and related views
 ### `Added` for new features
 
 - ApiSocialLoginModel and related views
+- route to the default user.latte
 
 ### `Changed` for changes in existing functionality
 

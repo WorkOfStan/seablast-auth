@@ -38,7 +38,8 @@ To create the expected database table structure, just add the seablast/auth migr
 
 ### Routing
 
-`/user` is the default route to the user log-in/log-out page, so configure it within your `conf/app.conf.php` like this:
+`/user` is the default route (which can be changed by `AuthConstant::USER_ROUTE`) to the user log-in/log-out page,
+but if you want to customize it, configure path to your own template within your app's `conf/app.conf.php` like this:
 
 ```php
         //->setString(AuthConstant::USER_ROUTE, '/user') // can be changed
@@ -52,13 +53,9 @@ To create the expected database table structure, just add the seablast/auth migr
         )
 ```
 
-Note: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php).
+Note: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php), so Seablast/Auth configuration is used with v0.2.5 forward.
 
-Todo - add description also of the views
-
-- // /api/social-login is a single endpoint , differentiation by provider is done in the parameter provider;
-- // so far just facebook, google
-- remove facebook.latte, google.latte, eventually also facebook-custom.latte and google-custom.latte
+`send-auth-token.js` (since Seablast::v0.2.10) expects the route `/api/social-login` as configured in [app.conf.php](conf/app.conf.php) and provider either `facebook` or `google`.
 
 ### View
 
@@ -78,7 +75,9 @@ Existence of configuration strings 'FACEBOOK_APP_ID' or 'GOOGLE_CLIENT_ID' imply
 
 Note 1: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
 
-Notee 2: The new Google Identity Services no longer open a traditional pop‑up account chooser; instead, it displays the One Tap UI.
+Note 2: send-auth-token.js is expected in seablast directory, which needs at least Seablast v0.2.10.
+
+Note 3: The new Google Identity Services no longer opens a traditional pop‑up account chooser; instead, it displays the One Tap UI.
 
 ## Testing
 

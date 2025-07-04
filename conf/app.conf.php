@@ -34,7 +34,7 @@ return static function (SeablastConfiguration $SBConfig): void {
             SeablastConstant::APP_MAPPING,
             '/user', // page slug, i.e. URL representation
             [
-                'template' => 'user', // template used by the View component
+                'template' => '../vendor/seablast/auth/views/user', // template used by the View component
                 'model' => '\Seablast\Auth\UserModel',
             ]
         )

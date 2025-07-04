@@ -1,0 +1,7 @@
+{* inherite.latte requires $latte which equals to the filename of latte including the extension including the path even if the requesting latte is in this path *}
+{* instead of simply {include $latte} call {include 'inherite.latte', latte => $latte} so that the preferred existing version of latte is used *}
+    {try}
+        {include '../../../../views/' . $latte} {* app prefers app *}
+    {else}
+        {include $latte} {* fallback to the Seablast library version *}
+    {/try}

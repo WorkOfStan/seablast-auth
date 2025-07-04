@@ -1,0 +1,21 @@
+<div>
+  {include 'inherite.latte', latte => 'login-form.latte'}
+</div>
+{if !$configuration->flag->status('SB:USER_IS_AUTHENTICATED') && $configuration->flag->status('AuthApp:FLAG_USE_SOCIAL_LOGIN') && $showLogin}
+    <div n:if="$configuration->exists('AuthApp:FACEBOOK_APP_ID')">
+      <hr>
+      {include 'inherite.latte', latte => 'login-social-facebook-html.latte'}
+    </div>
+    <div n:if="$configuration->exists('AuthApp:GOOGLE_CLIENT_ID')">
+      <hr>
+      <script>localStorage.removeItem('isLoggedInGoogle');</script>
+      {include 'inherite.latte', latte => 'login-social-google-html.latte'}
+    </div>
+    {if $configuration->exists('AuthApp:FACEBOOK_APP_ID')}
+    {include 'inherite.latte', latte => 'login-social-facebook-script.latte'}
+    {/if}
+    {if $configuration->exists('AuthApp:GOOGLE_CLIENT_ID')}
+    {include 'inherite.latte', latte => 'login-social-google-script.latte'}
+    {/if}
+    {include 'inherite.latte', latte => 'login-social-common-script.latte'}
+{/if}

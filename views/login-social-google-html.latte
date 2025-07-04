@@ -1,0 +1,14 @@
+{if $configuration->flag->status('AuthApp:FLAG_SOCIAL_LOGIN_CUSTOM')}
+    <button id="custom-google-btn">Sign in with Google</button>
+{else}
+    <!-- Google Sign-In Button -->{* according to 2024/11 relevant https://developers.google.com/identity/sign-in/web/sign-in *}
+    <div id="g_id_onload"
+         data-client_id="{$configuration->getString('AuthApp:GOOGLE_CLIENT_ID')}"
+         data-callback="handleGoogleCredentialResponse"
+         data-auto_prompt="false" {* This ensures the One Tap prompt doesn't automatically appear when the page loads. *}
+         >
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+    <!-- Google Sign-out Button logout of Google -->
+    <!--a href="#" onclick="googleSignOut();">Odhlásit se od Google</a-->
+{/if}

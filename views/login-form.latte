@@ -6,5 +6,5 @@
         <input type="submit" value="Ok">
     </form>
 </p>
-<p n:if="$showLogout"><a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/user/?logout">Logout</a></p>
+<p n:if="$showLogout"><a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/?logout">Logout</a></p>
 <p n:if="$message">{$message}</p>

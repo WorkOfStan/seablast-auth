@@ -15,6 +15,7 @@ use Webmozart\Assert\Assert;
  * IdentityManager class manages user authentication and session handling.
  * Uses MySQLi for database access.
  *
+ * Call setCookieDomainPath($SB_APP_ROOT_ABSOLUTE_URL) to limit cookie realm                                        
  * Call setTablePrefix injection, if prefix is used.
  *
  * Note: Timestamps and Timezones: Ensure that your PHP and MySQL timezones are properly set,
@@ -27,9 +28,9 @@ class IdentityManager implements IdentityManagerInterface
     use \Nette\SmartObject;
 
     /** @var string Cookie domain. */
-    private $cookieDomain;
+    private $cookieDomain = '';
     /** @var string Path for cookies. */
-    private $cookiePath;
+    private $cookiePath = '/';
     /** @var string User email. */
     private $email;
     /** @var bool Authentication status. */
@@ -53,8 +54,6 @@ class IdentityManager implements IdentityManagerInterface
     public function __construct(\mysqli $mysqli)
     {
         $this->mysqli = $mysqli;
-        $this->cookiePath = '/'; // todo limit
-        $this->cookieDomain = ''; // todo extract
     }
 
     /**
@@ -431,6 +430,20 @@ class IdentityManager implements IdentityManagerInterface
         Debugger::barDump(['email' => $this->email, 'roleId' => $this->roleId, 'userId' => $this->userId], 'User');
         //$this->dbms->query("UPDATE `{$this->tablePrefix}users` SET last_access = CURRENT_TIMESTAMP
         // WHERE email = '{$this->email}'");
+    }
+
+    /**
+     * Cookie domain and path injection.
+     *
+     * @param string $url SB_APP_ROOT_ABSOLUTE_URL
+     * @return void
+     */
+    public function setCookieDomainPath(string $url): void
+    {
+        $parsedUrl = parse_url($url);
+        // Extract domain and path
+        $this->cookieDomain = $parsedUrl['host']; // "dada.com"
+        $this->cookiePath = $parsedUrl['path'] ?? '/'; // "/path/to/app" or "/" if path not set
     }
 
     /**

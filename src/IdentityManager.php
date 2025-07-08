@@ -96,9 +96,9 @@ class IdentityManager implements IdentityManagerInterface
         // todo if not flag allow Remember Me; then return;
         // Create relogin cookie which expires in 30 days (only for HTTPS)
         if (
-            // TODO // SeablastController: more ways to identify HTTPS
-            isset($this->superglobals->server['REQUEST_SCHEME']) &&
-            $this->superglobals->server['REQUEST_SCHEME'] === 'https'
+            // TODO // SeablastController: more ways to identify HTTPS (without global var)
+            isset($_SERVER['REQUEST_SCHEME']) &&
+            $_SERVER['REQUEST_SCHEME'] === 'https'
         ) {
             setcookie(
                 'sbRememberMe',

@@ -15,7 +15,7 @@ use Webmozart\Assert\Assert;
  * IdentityManager class manages user authentication and session handling.
  * Uses MySQLi for database access.
  *
- * //Call setCookieDomainPath($SB_APP_ROOT_ABSOLUTE_URL) to limit cookie realm                                        
+ * //Call setCookieDomainPath($SB_APP_ROOT_ABSOLUTE_URL) to limit cookie realm
  * Call setTablePrefix injection, if table prefix is used.
  *
  * Note: Timestamps and Timezones: Ensure that your PHP and MySQL timezones are properly set,
@@ -105,10 +105,10 @@ class IdentityManager implements IdentityManagerInterface
             'sbRememberMe',
             $rememberMeToken,
             time() + 30 * 24 * 60 * 60//, // expire time: days * hours * minutes * seconds
-//            $this->cookiePath,
-//            $this->cookieDomain,
-//            true,
-//            true
+            //            $this->cookiePath,
+            //            $this->cookieDomain,
+            //            true,
+            //            true
         );
         // Set a long-lived cookie for HTTPS only
     }
@@ -377,9 +377,8 @@ class IdentityManager implements IdentityManagerInterface
             Assert::string($_COOKIE['sbRememberMe']);
             $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
                 . (string) $_COOKIE['sbRememberMe'] . "';");
-            setcookie('sbRememberMe', '', time() - 3600
+            setcookie('sbRememberMe', '', time() - 3600);
                 //, $this->cookiePath, $this->cookieDomain, true, true
-            );
         }
         $this->isAuthenticated = false;
     }

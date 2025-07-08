@@ -15,8 +15,8 @@ use Webmozart\Assert\Assert;
  * IdentityManager class manages user authentication and session handling.
  * Uses MySQLi for database access.
  *
- * Call setCookieDomainPath($SB_APP_ROOT_ABSOLUTE_URL) to limit cookie realm                                        
- * Call setTablePrefix injection, if prefix is used.
+ * //Call setCookieDomainPath($SB_APP_ROOT_ABSOLUTE_URL) to limit cookie realm                                        
+ * Call setTablePrefix injection, if table prefix is used.
  *
  * Note: Timestamps and Timezones: Ensure that your PHP and MySQL timezones are properly set,
  * as the code uses CURRENT_TIMESTAMP for time-related operations.
@@ -27,10 +27,10 @@ class IdentityManager implements IdentityManagerInterface
 {
     use \Nette\SmartObject;
 
-    /** @var string Cookie domain. */
-    private $cookieDomain = '';
-    /** @var string Path for cookies. */
-    private $cookiePath = '/';
+    //** @var string Cookie domain. */
+    //private $cookieDomain = '';
+    //** @var string Path for cookies. */
+    //private $cookiePath = '/';
     /** @var string User email. */
     private $email;
     /** @var bool Authentication status. */
@@ -104,11 +104,11 @@ class IdentityManager implements IdentityManagerInterface
         setcookie(
             'sbRememberMe',
             $rememberMeToken,
-            time() + 30 * 24 * 60 * 60, // expire time: days * hours * minutes * seconds
-            $this->cookiePath,
-            $this->cookieDomain,
-            true,
-            true
+            time() + 30 * 24 * 60 * 60//, // expire time: days * hours * minutes * seconds
+//            $this->cookiePath,
+//            $this->cookieDomain,
+//            true,
+//            true
         );
         // Set a long-lived cookie for HTTPS only
     }
@@ -377,7 +377,9 @@ class IdentityManager implements IdentityManagerInterface
             Assert::string($_COOKIE['sbRememberMe']);
             $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
                 . (string) $_COOKIE['sbRememberMe'] . "';");
-            setcookie('sbRememberMe', '', time() - 3600, $this->cookiePath, $this->cookieDomain, true, true);
+            setcookie('sbRememberMe', '', time() - 3600
+                //, $this->cookiePath, $this->cookieDomain, true, true
+            );
         }
         $this->isAuthenticated = false;
     }
@@ -438,13 +440,13 @@ class IdentityManager implements IdentityManagerInterface
      * @param string $url SB_APP_ROOT_ABSOLUTE_URL
      * @return void
      */
-    public function setCookieDomainPath(string $url): void
-    {
-        $parsedUrl = parse_url($url);
-        // Extract domain and path
-        $this->cookieDomain = $parsedUrl['host']; // "dada.com"
-        $this->cookiePath = $parsedUrl['path'] ?? '/'; // "/path/to/app" or "/" if path not set
-    }
+//    public function setCookieDomainPath(string $url): void
+//    {
+//        $parsedUrl = parse_url($url);
+//        // Extract domain and path
+//        $this->cookieDomain = $parsedUrl['host']; // "dada.com"
+//        $this->cookiePath = $parsedUrl['path'] ?? '/'; // "/path/to/app" or "/" if path not set
+//    }
 
     /**
      * Table prefix injection.

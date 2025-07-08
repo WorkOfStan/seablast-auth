@@ -50,6 +50,8 @@ session_set_cookie_params(
 ): bool
 ```
 
+Note: sbRememberMe cookie created only if the web is HTTPS.
+
 ### Routing
 
 `/user` is the default route (which can be changed by `AuthConstant::USER_ROUTE`) to the user log-in/log-out page,

@@ -29,6 +29,8 @@ feat: ApiSocialLoginModel and related views
 
 ### `Security` in case of vulnerabilities
 
+- sbRememberMe cookie created only if the web is HTTPS.
+
 ## [0.1.4] - 2025-03-09
 
 chore: PHP/8.4 support

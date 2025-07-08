@@ -94,16 +94,22 @@ class IdentityManager implements IdentityManagerInterface
         // todo assert insert doesn't fail
         $_SESSION['sbSessionToken'] = $sessionId;
         // todo if not flag allow Remember Me; then return;
-        // Create relogin cookie which expires in 30 days
-        setcookie(
-            'sbRememberMe',
-            $rememberMeToken,
-            time() + 30 * 24 * 60 * 60, // expire time: days * hours * minutes * seconds
-            '', // default cookie path
-            '', // default cookie host
-            true // Set a long-lived cookie for HTTPS only
-            // true
-        );
+        // Create relogin cookie which expires in 30 days (only for HTTPS)
+        if (
+            // TODO // SeablastController: more ways to identify HTTPS
+            isset($this->superglobals->server['REQUEST_SCHEME']) &&
+            $this->superglobals->server['REQUEST_SCHEME'] === 'https'
+        ) {
+            setcookie(
+                'sbRememberMe',
+                $rememberMeToken,
+                time() + 30 * 24 * 60 * 60, // expire time: days * hours * minutes * seconds
+                '', // default cookie path - so appPath/user not appPath
+                '', // default cookie host
+                true, // Set a long-lived cookie for HTTPS only
+                true, // http only
+            );
+        }
     }
 
     /**

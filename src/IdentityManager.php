@@ -107,7 +107,7 @@ class IdentityManager implements IdentityManagerInterface
                 '', // default cookie path - so appPath/user not appPath
                 '', // default cookie host
                 true, // Set a long-lived cookie for HTTPS only
-                true, // http only
+                true // http only
             );
         }
     }

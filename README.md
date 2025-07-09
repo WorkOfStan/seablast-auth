@@ -10,6 +10,7 @@ If your Seablast-based application necessitates user authentication or resource 
 
 ## User management
 
+- RBAC (Role-Based Access Control) supported
 - user MUST have one role (admin, editor, ordinary user)
 - user MAY belong to various groups (based on subscription tariff, a promotion, etc.)
 

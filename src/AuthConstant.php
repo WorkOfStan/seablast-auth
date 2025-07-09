@@ -15,6 +15,10 @@ class AuthConstant
      */
     public const FACEBOOK_APP_ID = 'AuthApp:FACEBOOK_APP_ID';
     /**
+     * @var string Flag: Create/read Remember me cookie for long term login
+     */
+    public const FLAG_REMEMBER_ME_COOKIE = 'AuthApp:FLAG_REMEMBER_ME_COOKIE';
+    /**
      * @var string Flag: Social login custom button instead of native one
      */
     public const FLAG_SOCIAL_LOGIN_CUSTOM = 'AuthApp:FLAG_SOCIAL_LOGIN_CUSTOM';

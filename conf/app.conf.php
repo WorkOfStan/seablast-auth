@@ -15,6 +15,7 @@ return static function (SeablastConfiguration $SBConfig): void {
         ->activate(AuthConstant::FLAG_USE_SOCIAL_LOGIN) // actual social login requires AuthApp:..social.._ID
         // - AuthApp:GOOGLE_CLIENT_ID
         // - AuthApp:FACEBOOK_APP_ID
+        ->activate(AuthConstant::FLAG_REMEMBER_ME_COOKIE) // TODO check which default makes more sense
     ;
     $SBConfig
         // /api/social-login is a single end-point , differentiation by provider is done in the parameter provider;

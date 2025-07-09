@@ -36,6 +36,22 @@ To create the expected database table structure, just add the seablast/auth migr
     ],
 ```
 
+### Cookies
+
+IdentityManager expects cookie scope be set already by:
+
+```php
+session_set_cookie_params(
+    int $lifetime_or_options,
+    ?string $path = null,
+    ?string $domain = null,
+    ?bool $secure = null,
+    ?bool $httponly = null
+): bool
+```
+
+Note: sbRememberMe cookie created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
+
 ### Routing
 
 `/user` is the default route (which can be changed by `AuthConstant::USER_ROUTE`) to the user log-in/log-out page,

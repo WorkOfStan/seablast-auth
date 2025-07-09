@@ -103,8 +103,9 @@ class UserModel implements SeablastModelInterface
                         'message' => 'Invalid token.',
                 ];
             }
-            // auto re-login attempt
+            // auto re-login attempt if Remember me cookie allowed
             if (
+                $this->configuration->flag->status(AuthConstant::FLAG_REMEMBER_ME_COOKIE) &&
                 $this->user->doYouRememberMe(// let through only strings
                     array_filter(
                         $_COOKIE,

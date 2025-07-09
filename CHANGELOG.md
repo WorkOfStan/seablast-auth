@@ -7,17 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-feat: ApiSocialLoginModel and related views
-
 ### `Added` for new features
 
-- ApiSocialLoginModel and related views
-- route to the default user.latte
-
 ### `Changed` for changes in existing functionality
-
-- GitHub Actions version bump
-- PHPUnit test folder renamed Test -> tests
 
 ### `Deprecated` for soon-to-be removed features
 
@@ -25,9 +17,29 @@ feat: ApiSocialLoginModel and related views
 
 ### `Fixed` for any bugfixes
 
+### `Security` in case of vulnerabilities
+
+## [0.1.5] - 2025-07-09
+
+feat: ApiSocialLoginModel and related views
+
+### Added
+
+- ApiSocialLoginModel and related views
+- route to the default user.latte
+
+### Changed
+
+- GitHub Actions version bump
+- PHPUnit test folder renamed Test -> tests
+
+### Fixed
+
 - .htaccess in Apache2.4 syntax
 
-### `Security` in case of vulnerabilities
+### Security
+
+- sbRememberMe cookie created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
 
 ## [0.1.4] - 2025-03-09
 
@@ -83,7 +95,8 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.1...v0.1.2

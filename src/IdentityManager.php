@@ -93,21 +93,11 @@ class IdentityManager implements IdentityManagerInterface
             . ", '" . $rememberMeToken . "', CURRENT_TIMESTAMP);");
         // todo assert insert doesn't fail
         $_SESSION['sbSessionToken'] = $sessionId;
-        // todo if not flag allow Remember Me; then return;
-        // Create relogin cookie which expires in 30 days (only for HTTPS)
-        if (
-            // TODO // SeablastController: more ways to identify HTTPS (without global var)
-            isset($_SERVER['REQUEST_SCHEME']) &&
-            $_SERVER['REQUEST_SCHEME'] === 'https'
-        ) {
-            setcookie(
-                'sbRememberMe',
+        // Create a long-lived relogin cookie which expires in 30 days (only for HTTPS)
+        if ($this->isHttps($_SERVER)) {
+            $this->setCookie(
                 $rememberMeToken,
-                time() + 30 * 24 * 60 * 60, // expire time: days * hours * minutes * seconds
-                '', // default cookie path - so appPath/user not appPath
-                '', // default cookie host
-                true, // Set a long-lived cookie for HTTPS only
-                true // http only
+                time() + 30 * 24 * 60 * 60 // expire time: days * hours * minutes * seconds
             );
         }
     }
@@ -122,6 +112,10 @@ class IdentityManager implements IdentityManagerInterface
     {
         // Check if the "Remember Me" cookie exists
         if (!isset($cookie['sbRememberMe'])) {
+            return false;
+        }
+        // Ignore Remember Me cookie, if not over HTTPS
+        if (!$this->isHttps($_SERVER)) {
             return false;
         }
         // Retrieve the token from the cookie
@@ -284,6 +278,43 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
+     * Checks whether the current request was made using HTTPS.
+     *
+     * This function supports detection of HTTPS in both Apache and Nginx environments,
+     * including setups behind reverse proxies or load balancers (e.g., Nginx, Cloudflare),
+     * by inspecting common server variables and headers.
+     *
+     * For maximum security when behind a proxy, you can pass a list of trusted proxy IPs
+     * to avoid spoofed headers like X-Forwarded-Proto.
+     *
+     * @param array<mixed> $server The $_SERVER array or a custom equivalent.
+     * @param array<string> $trustedProxies (optional) Array of trusted proxy IP addresses.
+     *                               When specified, proxy-related headers are trusted
+     *                               only if the request comes from one of these IPs.
+     *
+     * @return bool True if the request was made via HTTPS, false otherwise.
+     *
+     * @example
+     * isHttps($_SERVER); // Basic usage
+     * isHttps($_SERVER, ['192.168.1.1']); // Usage with trusted proxies
+     */
+    private function isHttps(array $server, array $trustedProxies = []): bool
+    {
+        $clientIp = $server['REMOTE_ADDR'] ?? '';
+
+        $proxyHeaders = (
+            (!empty($server['HTTP_X_FORWARDED_PROTO']) && strtolower($server['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+            (!empty($server['HTTP_X_FORWARDED_SSL']) && strtolower($server['HTTP_X_FORWARDED_SSL']) === 'on')
+            );
+
+        return
+            (!empty($server['HTTPS']) && strtolower($server['HTTPS']) === 'on') ||
+            (!empty($server['REQUEST_SCHEME']) && strtolower($server['REQUEST_SCHEME']) === 'https') ||
+            (!empty($server['SERVER_PORT']) && $server['SERVER_PORT'] == '443') ||
+            ($proxyHeaders && in_array($clientIp, $trustedProxies, true));
+    }
+
+    /**
      * Determines if the current authentication attempt is for a new user.
      *
      * @return bool True if new user, false otherwise.
@@ -376,7 +407,7 @@ class IdentityManager implements IdentityManagerInterface
             Assert::string($_COOKIE['sbRememberMe']);
             $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
                 . (string) $_COOKIE['sbRememberMe'] . "';");
-            setcookie('sbRememberMe', '', time() - 3600);
+            $this->setCookie('', time() - 3600);
         }
         $this->isAuthenticated = false;
     }
@@ -429,6 +460,26 @@ class IdentityManager implements IdentityManagerInterface
         Debugger::barDump(['email' => $this->email, 'roleId' => $this->roleId, 'userId' => $this->userId], 'User');
         //$this->dbms->query("UPDATE `{$this->tablePrefix}users` SET last_access = CURRENT_TIMESTAMP
         // WHERE email = '{$this->email}'");
+    }
+
+    /**
+     * Set cookie the same way for creation and deletion.
+     *
+     * @param string $value
+     * @param int $time
+     * @return void
+     */
+    private function setCookie(string $value, int $time): void
+    {
+        setcookie(
+            'sbRememberMe',
+            $value,
+            $time, // expire time: days * hours * minutes * seconds
+            '', // default cookie path - so appPath/user not appPath
+            '', // default cookie host
+            true, // Set a long-lived cookie for HTTPS only
+            true // http only
+        );
     }
 
     /**

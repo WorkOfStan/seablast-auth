@@ -50,7 +50,7 @@ session_set_cookie_params(
 ): bool
 ```
 
-Note: sbRememberMe cookie created only if the web is HTTPS.
+Note: sbRememberMe cookie created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
 
 ### Routing
 

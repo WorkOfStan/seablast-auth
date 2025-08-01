@@ -3,7 +3,7 @@
   "description": "No-password authentication and authorisation library for Seablast for PHP",
   "type": "library",
   "require": {
-    "php": "^7.2 || ^8.0",
+    "php": ">=7.2 <8.5",
     "guzzlehttp/guzzle": "^7.8",
     "nette/utils": "^3.2.10 || ^4.0.5",
     "robmorgan/phinx": "^0.12.13 || ^0.13.4 || ^0.14.0 || ^0.15.5 || ^0.16.5",

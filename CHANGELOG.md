@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Changed` for changes in existing functionality
 
+- package limited to the tested PHP versions, i.e. "php": ">=7.2 <8.5"
+
 ### `Deprecated` for soon-to-be removed features
 
 ### `Removed` for now removed features

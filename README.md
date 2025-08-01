@@ -25,7 +25,7 @@ When just getting the identity of a logged-in user is needed:
     $identity->setTablePrefix($this->configuration->dbmsTablePrefix());
 ```
 
-To create the expected database table structure, just add the seablast/auth migration path to the phinx.php configuration, e.g.
+To create the expected database table structure, just add the seablast/auth migration path to your phinx.php configuration, e.g.
 
 ```php
     'paths' => [
@@ -39,7 +39,7 @@ To create the expected database table structure, just add the seablast/auth migr
 
 ### Cookies
 
-IdentityManager expects cookie scope be set already by:
+IdentityManager expects cookie scope being set already by:
 
 ```php
 session_set_cookie_params(

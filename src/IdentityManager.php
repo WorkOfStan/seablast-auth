@@ -507,7 +507,9 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function setCookiePath(string $cookiePath): void
     {
+        Debugger::barDump($cookiePath, 'Cookie Path injected from');
         $this->cookiePath = $cookiePath;
+        Debugger::barDump($this->cookiePath, 'Cookie Path injected to');
     }
 
     /**

@@ -103,6 +103,8 @@ class IdentityManager implements IdentityManagerInterface
                 $rememberMeToken,
                 time() + 30 * 24 * 60 * 60 // expire time: days * hours * minutes * seconds
             );
+        } else {
+            Debugger::barDump('http => no sbRememberMe cookie');
         }
     }
 

@@ -20,7 +20,7 @@ When just getting the identity of a logged-in user is needed:
 
 ```php
     // Instantiate the IdentityManager class with `\mysqli`
-    $identity = new IdentityManager($this->configuration->dbms());
+    $identity = new IdentityManager($this->configuration->mysqli());
     // If prefix is used, inject it
     $identity->setTablePrefix($this->configuration->dbmsTablePrefix());
 ```
@@ -52,6 +52,7 @@ session_set_cookie_params(
 ```
 
 Note: sbRememberMe cookie created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
+(todo check whether if not allowed, it is really not created or just not read)
 
 ### Routing
 

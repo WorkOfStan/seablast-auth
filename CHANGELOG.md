@@ -27,6 +27,7 @@ chore: package limited to the tested PHP versions
 
 - package limited to the tested PHP versions, i.e. "php": ">=7.2 <8.5"
 - logs error if sbRememberMe cookie could not be set
+- instead of the deprecated `dbms()` used `$this->user = new IdentityManager($this->configuration->mysqli());`
 
 ## [0.1.5] - 2025-07-09
 

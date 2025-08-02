@@ -482,6 +482,7 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function setCookie(string $value, int $time): void
     {
+        Debugger::barDump($this->cookiePath, 'setcookie - Cookie Path');
         $result = setcookie(
             'sbRememberMe',
             $value,

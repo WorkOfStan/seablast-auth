@@ -57,7 +57,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Invoke the PHPCS check and PHPCBF fix
-        # Use the latest commit in the main branch.
         uses: WorkOfStan/phpcs-fix@v1.0.2
         with:
           commit-changes: true

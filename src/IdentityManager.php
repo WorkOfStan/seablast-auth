@@ -9,6 +9,7 @@ use Seablast\Auth\Exceptions\DbmsException;
 use Seablast\Auth\Exceptions\UserException;
 use Seablast\Interfaces\IdentityManagerInterface;
 use Tracy\Debugger;
+use Tracy\ILogger;
 use Webmozart\Assert\Assert;
 
 /**
@@ -17,10 +18,13 @@ use Webmozart\Assert\Assert;
  *
  * Call setTablePrefix injection, if table prefix is used.
  *
+ * Sets 'sbRememberMe' cookie = Remember Me cookie = RM cookie
+ *
  * Note: Timestamps and Timezones: Ensure that your PHP and MySQL timezones are properly set,
  * as the code uses CURRENT_TIMESTAMP for time-related operations.
  * TODO: not just (string) type casting but also escapeSQL against SQL injection
  * TODO: test intervals and refactor code
+ * TODO: Pdo as well as Mysqli
  */
 class IdentityManager implements IdentityManagerInterface
 {
@@ -474,7 +478,7 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function setCookie(string $value, int $time): void
     {
-        setcookie(
+        $result = setcookie(
             'sbRememberMe',
             $value,
             $time, // expire time: days * hours * minutes * seconds
@@ -483,6 +487,9 @@ class IdentityManager implements IdentityManagerInterface
             true, // Set a long-lived cookie for HTTPS only
             true // http only
         );
+        if ($result === false) {
+            Debugger::log('sbRememberMe cookie could not be set.', ILogger::ERROR);
+        }
     }
 
     /**

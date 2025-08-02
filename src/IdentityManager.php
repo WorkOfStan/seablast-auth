@@ -30,6 +30,8 @@ class IdentityManager implements IdentityManagerInterface
 {
     use \Nette\SmartObject;
 
+    /** @var string Cookie path that may be injected. */
+    private $cookiePath = '';
     /** @var string User email. */
     private $email;
     /** @var bool Authentication status. */
@@ -484,7 +486,7 @@ class IdentityManager implements IdentityManagerInterface
             'sbRememberMe',
             $value,
             $time, // expire time: days * hours * minutes * seconds
-            '', // default cookie path - so appPath/user not appPath
+            $this->cookiePath, // defined, as '' may change (between /app and /app/user)
             '', // default cookie host
             true, // Set a long-lived cookie for HTTPS only
             true // http only
@@ -492,6 +494,19 @@ class IdentityManager implements IdentityManagerInterface
         if ($result === false) {
             Debugger::log('sbRememberMe cookie could not be set.', ILogger::ERROR);
         }
+    }
+
+    /**
+     * Cookie path injection.
+     *
+     * As '' may change (between /app and /app/user)
+     *
+     * @param string $cookiePath
+     * @return void
+     */
+    public function setCookiePath(string $cookiePath): void
+    {
+        $this->cookiePath = $cookiePath;
     }
 
     /**

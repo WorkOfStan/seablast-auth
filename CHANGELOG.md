@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
-## [0.1.6] - 2025-08-02
+## [0.1.6] - 2025-08-03
 
 chore: package limited to the tested PHP versions
 
@@ -28,6 +28,10 @@ chore: package limited to the tested PHP versions
 - package limited to the tested PHP versions, i.e. "php": ">=7.2 <8.5"
 - logs error if sbRememberMe cookie could not be set
 - instead of the deprecated `dbms()` used `$this->user = new IdentityManager($this->configuration->mysqli());`
+
+### Fixed
+
+- allow injecting Cookie path `$this->identity->setCookiePath($this->getAppPath());`
 
 ## [0.1.5] - 2025-07-09
 

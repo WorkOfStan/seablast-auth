@@ -7,6 +7,7 @@ namespace Seablast\Auth\Models;
 use Seablast\Auth\IdentityManager;
 use Seablast\Seablast\Apis\GenericRestApiJsonModel;
 use Seablast\Seablast\SeablastConfiguration;
+use Seablast\Seablast\SeablastConstant;
 use Seablast\Seablast\Superglobals;
 use stdClass;
 use Tracy\Debugger;

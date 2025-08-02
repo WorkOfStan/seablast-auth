@@ -23,6 +23,8 @@ When just getting the identity of a logged-in user is needed:
     $identity = new IdentityManager($this->configuration->mysqli());
     // If prefix is used, inject it
     $identity->setTablePrefix($this->configuration->dbmsTablePrefix());
+    // To make Remember me Cookies predictable, inject a cookie path
+    $identity->setCookiePath($this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH));
 ```
 
 To create the expected database table structure, just add the seablast/auth migration path to your phinx.php configuration, e.g.

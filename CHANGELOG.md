@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.6] - 2025-08-03
 
-chore: package limited to the tested PHP versions
+fix: injecting Cookie path vs Remember Me cookie conflicts
 
 ### Changed
 

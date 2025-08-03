@@ -500,16 +500,15 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Cookie path injection.
      *
-     * As '' may change (between /app and /app/user)
+     * As '' may change (between /app and /app/user) causing cookie conflicts.
      *
      * @param string $cookiePath
      * @return void
      */
     public function setCookiePath(string $cookiePath): void
     {
-        Debugger::barDump($cookiePath, 'Cookie Path injected from');
         $this->cookiePath = $cookiePath;
-        Debugger::barDump($this->cookiePath, 'Cookie Path injected to');
+        Debugger::barDump($this->cookiePath, 'Injected cookie path to IdentityManager');
     }
 
     /**

@@ -11,8 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Changed` for changes in existing functionality
 
-- package limited to the tested PHP versions, i.e. "php": ">=7.2 <8.5"
-
 ### `Deprecated` for soon-to-be removed features
 
 ### `Removed` for now removed features
@@ -20,6 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### `Fixed` for any bugfixes
 
 ### `Security` in case of vulnerabilities
+
+## [0.1.6] - 2025-08-03
+
+fix: injecting Cookie path vs Remember Me cookie conflicts
+
+### Changed
+
+- package limited to the tested PHP versions, i.e. "php": ">=7.2 <8.5"
+- logs error if sbRememberMe cookie could not be set
+- instead of the deprecated `dbms()` used `$this->user = new IdentityManager($this->configuration->mysqli());`
+
+### Fixed
+
+- allow injecting Cookie path `$this->identity->setCookiePath($this->getAppPath());`
 
 ## [0.1.5] - 2025-07-09
 
@@ -97,7 +109,8 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.2...v0.1.3

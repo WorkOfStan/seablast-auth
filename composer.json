@@ -7,7 +7,7 @@
     "guzzlehttp/guzzle": "^7.8",
     "nette/utils": "^3.2.10 || ^4.0.5",
     "robmorgan/phinx": "^0.12.13 || ^0.13.4 || ^0.14.0 || ^0.15.5 || ^0.16.5",
-    "seablast/interfaces": "^0.1",
+    "seablast/interfaces": "^0.1.1",
     "symfony/mailer": "^4.4.49 || ^5 || ^6 || ^7",
     "symfony/security-csrf": "^4.4.37 || ^5 || ^6 || ^7",
     "tracy/tracy": "^2.9.8 || ^2.10.9",

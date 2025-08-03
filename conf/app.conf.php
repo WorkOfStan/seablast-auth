@@ -11,7 +11,6 @@ use Seablast\Seablast\SeablastConstant;
 
 return static function (SeablastConfiguration $SBConfig): void {
     $SBConfig->flag
-        //->activate(SeablastConstant::FLAG_WEB_RUNNING)
         ->activate(AuthConstant::FLAG_USE_SOCIAL_LOGIN) // actual social login requires AuthApp:..social.._ID
         // - AuthApp:GOOGLE_CLIENT_ID
         // - AuthApp:FACEBOOK_APP_ID

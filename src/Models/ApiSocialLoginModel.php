@@ -7,6 +7,7 @@ namespace Seablast\Auth\Models;
 use Seablast\Auth\IdentityManager;
 use Seablast\Seablast\Apis\GenericRestApiJsonModel;
 use Seablast\Seablast\SeablastConfiguration;
+use Seablast\Seablast\SeablastConstant;
 use Seablast\Seablast\Superglobals;
 use stdClass;
 use Tracy\Debugger;
@@ -54,6 +55,9 @@ class ApiSocialLoginModel extends GenericRestApiJsonModel
         try {
             $this->identity = new IdentityManager($this->configuration->mysqli());
             $this->identity->setTablePrefix($this->configuration->dbmsTablePrefix());
+            $this->identity->setCookiePath(
+                $this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH)
+            );
             // Business logic starts here
             // If logged in, log out first
             if ($this->identity->isAuthenticated()) {

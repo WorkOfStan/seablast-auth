@@ -9,6 +9,7 @@ use Seablast\Auth\Exceptions\DbmsException;
 use Seablast\Auth\Exceptions\UserException;
 use Seablast\Interfaces\IdentityManagerInterface;
 use Tracy\Debugger;
+use Tracy\ILogger;
 use Webmozart\Assert\Assert;
 
 /**
@@ -17,15 +18,20 @@ use Webmozart\Assert\Assert;
  *
  * Call setTablePrefix injection, if table prefix is used.
  *
+ * Sets 'sbRememberMe' cookie = Remember Me cookie = RM cookie
+ *
  * Note: Timestamps and Timezones: Ensure that your PHP and MySQL timezones are properly set,
  * as the code uses CURRENT_TIMESTAMP for time-related operations.
  * TODO: not just (string) type casting but also escapeSQL against SQL injection
  * TODO: test intervals and refactor code
+ * TODO: Pdo as well as Mysqli
  */
 class IdentityManager implements IdentityManagerInterface
 {
     use \Nette\SmartObject;
 
+    /** @var string Cookie path that may be injected. */
+    private $cookiePath = '';
     /** @var string User email. */
     private $email;
     /** @var bool Authentication status. */
@@ -99,6 +105,8 @@ class IdentityManager implements IdentityManagerInterface
                 $rememberMeToken,
                 time() + 30 * 24 * 60 * 60 // expire time: days * hours * minutes * seconds
             );
+        } else {
+            Debugger::barDump('http => no sbRememberMe cookie');
         }
     }
 
@@ -474,15 +482,33 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function setCookie(string $value, int $time): void
     {
-        setcookie(
+        Debugger::barDump($this->cookiePath, 'setcookie - Cookie Path');
+        $result = setcookie(
             'sbRememberMe',
             $value,
             $time, // expire time: days * hours * minutes * seconds
-            '', // default cookie path - so appPath/user not appPath
+            $this->cookiePath, // defined, as '' may change (between /app and /app/user)
             '', // default cookie host
             true, // Set a long-lived cookie for HTTPS only
             true // http only
         );
+        if ($result === false) {
+            Debugger::log('sbRememberMe cookie could not be set.', ILogger::ERROR);
+        }
+    }
+
+    /**
+     * Cookie path injection.
+     *
+     * As '' may change (between /app and /app/user) causing cookie conflicts.
+     *
+     * @param string $cookiePath
+     * @return void
+     */
+    public function setCookiePath(string $cookiePath): void
+    {
+        $this->cookiePath = $cookiePath;
+        Debugger::barDump($this->cookiePath, 'Injected cookie path to IdentityManager');
     }
 
     /**

@@ -53,8 +53,11 @@ class UserModel implements SeablastModelInterface
         $this->configuration = $configuration;
         $this->superglobals = $superglobals;
         $this->userRoute = $this->configuration->getString(AuthConstant::USER_ROUTE);
-        $this->user = new IdentityManager($this->configuration->dbms());
+        $this->user = new IdentityManager($this->configuration->mysqli());
         $this->user->setTablePrefix($this->configuration->dbmsTablePrefix());
+        $this->user->setCookiePath(
+            $this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH)
+        );
     }
 
     /**

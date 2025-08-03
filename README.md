@@ -20,9 +20,11 @@ When just getting the identity of a logged-in user is needed:
 
 ```php
     // Instantiate the IdentityManager class with `\mysqli`
-    $identity = new IdentityManager($this->configuration->dbms());
+    $identity = new IdentityManager($this->configuration->mysqli());
     // If prefix is used, inject it
     $identity->setTablePrefix($this->configuration->dbmsTablePrefix());
+    // To make Remember me Cookies predictable = avoid conflicts, inject a cookie path
+    $identity->setCookiePath($this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH));
 ```
 
 To create the expected database table structure, just add the seablast/auth migration path to your phinx.php configuration, e.g.
@@ -52,6 +54,7 @@ session_set_cookie_params(
 ```
 
 Note: sbRememberMe cookie created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
+(todo check whether if not allowed, it is really not created or just not read)
 
 ### Routing
 

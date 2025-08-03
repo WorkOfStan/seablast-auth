@@ -5,6 +5,6 @@
     <rule ref="PSR12" />
     <rule ref="PSR1.Classes.ClassDeclaration">
         <!-- Don't apply `each class is in a file by itself, and is in a namespace of at least one level: a top-level vendor name` to generated code -->
-        <exclude-pattern>db/migrations/*.php</exclude-pattern>
+        <exclude-pattern>conf/db/migrations/*.php</exclude-pattern>
     </rule>
 </ruleset>

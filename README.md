@@ -39,6 +39,16 @@ To create the expected database table structure, just add the seablast/auth migr
     ],
 ```
 
+Following tables will be created (prefixed as set in your app), so avoid conflict with the naming of tables by your app:
+
+- email_token (user)
+- group (user_groups)
+- group_activation_tokens (user_groups)
+- roles (user)
+- session_user (user)
+- users (user)
+- user_group (user_groups)
+
 ### Cookies
 
 IdentityManager expects cookie scope being set already by:

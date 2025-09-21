@@ -17,7 +17,6 @@ RedirectMatch 404 \/log\/
 RedirectMatch 404 \/nbproject\/
 # only src folder in the root is hidden from the web server access
 RewriteRule ^src(/|$) - [R=404,L]
-#RedirectMatch 404 ^/src(/|$)
 RedirectMatch 404 \/temp\/
 RedirectMatch 404 \/tests\/
 RedirectMatch 404 \/views\/

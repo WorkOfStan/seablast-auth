@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+## [0.1.7] - 2025-09-21
+
+fix: initiate id for tables as UNSIGNED (not left as default, which is SIGNED)
+
 ## [0.1.6] - 2025-08-03
 
 fix: injecting Cookie path vs Remember Me cookie conflicts
@@ -109,7 +113,8 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.3...v0.1.4

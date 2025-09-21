@@ -26,13 +26,17 @@ final class User extends AbstractMigration
      */
     public function change(): void
     {
-        $roles = $this->table('roles', ['id' => 'integer', 'signed' => false, 'identity' => true]);
-        $roles->addColumn('name', 'string', ['limit' => 255])
+        $roles = $this->table('roles', ['id' => false, 'primary_key' => ['id']]);
+        $roles
+            ->addColumn('id', 'integer', ['identity' => true, 'signed' => false]) // UNSIGNED AUTO_INCREMENT PK
+            ->addColumn('name', 'string', ['limit' => 255])
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->create();
 
-        $users = $this->table('users', ['id' => 'integer', 'signed' => false, 'identity' => true]);
-        $users->addColumn('email', 'string', ['limit' => 255])
+        $users = $this->table('users', ['id' => false, 'primary_key' => ['id']]);
+        $users
+            ->addColumn('id', 'integer', ['identity' => true, 'signed' => false]) // UNSIGNED AUTO_INCREMENT PK
+            ->addColumn('email', 'string', ['limit' => 255])
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->addColumn('last_login', 'timestamp', ['null' => true, 'default' => null])
             ->addColumn('role_id', 'integer', ['signed' => false])
@@ -40,15 +44,19 @@ final class User extends AbstractMigration
             ->addIndex(['email'], ['unique' => true]) // Add a unique index on the 'email' column
             ->create();
 
-        $emailToken = $this->table('email_token', ['id' => 'integer', 'signed' => false, 'identity' => true]);
-        $emailToken->addColumn('email', 'string', ['limit' => 255])
+        $emailToken = $this->table('email_token', ['id' => false, 'primary_key' => ['id']]);
+        $emailToken
+            ->addColumn('id', 'integer', ['identity' => true, 'signed' => false]) // UNSIGNED AUTO_INCREMENT PK
+            ->addColumn('email', 'string', ['limit' => 255])
             ->addColumn('token', 'string', ['limit' => 255])
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->addForeignKey('email', 'users', 'email', ['delete' => 'CASCADE', 'update' => 'NO_ACTION'])
             ->create();
 
-        $sessionUser = $this->table('session_user', ['id' => 'integer', 'signed' => false, 'identity' => true]);
-        $sessionUser->addColumn('user_id', 'integer', ['signed' => false])
+        $sessionUser = $this->table('session_user', ['id' => false, 'primary_key' => ['id']]);
+        $sessionUser
+            ->addColumn('id', 'integer', ['identity' => true, 'signed' => false]) // UNSIGNED AUTO_INCREMENT PK
+            ->addColumn('user_id', 'integer', ['signed' => false])
             ->addColumn('token', 'string', ['limit' => 255])
             ->addColumn('created', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
             ->addColumn('updated', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])

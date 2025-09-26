@@ -19,9 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
-## [0.1.7] - 2025-09-21
+## [0.1.7] - 2025-09-27
 
 fix: initiate `id` for tables as UNSIGNED (not left as default, which is SIGNED)
+
+### Added
+
+- MailOut method to send emails
+
+### Fixed
+
+- initiate `id` for tables as UNSIGNED (not left as default, which is SIGNED)
 
 ## [0.1.6] - 2025-08-03
 

@@ -202,25 +202,47 @@ class UserModel implements SeablastModelInterface
             Debugger::barDump('Sending emails is not enabled');
             return;
         }
-        $transport = Transport::fromDsn(
-            'smtp://' . $this->configuration->getString(SeablastConstant::SB_SMTP_HOST) . ':'
-            . (string) $this->configuration->getInt(SeablastConstant::SB_SMTP_PORT)
+        $dsn = 'smtp://' . $this->configuration->getString(SeablastConstant::SB_SMTP_HOST) . ':'
+            . (string) $this->configuration->getInt(SeablastConstant::SB_SMTP_PORT);
+        $sender = new MailOut(
+            $dsn,
+            $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS)
         );
-        $mailer = new Mailer($transport);
-        $emailInstance = (new Email())
-            ->from($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS))
-            ->to($emailAddress)
-            //->cc('cc@example.com')
-            //->bcc('bcc@example.com')
-            //->replyTo('fabien@example.com')
-            //->priority(Email::PRIORITY_HIGH)
-            ->subject($this->configuration->getString(
+        $subject = $this->configuration->getString(
                 $this->user->isNewUser() ? AuthConstant::SUBJECT_EMAIL_REGISTRATION : AuthConstant::SUBJECT_EMAIL_LOGIN
-            ))
-            ->text($plainText)
-            //->html('<p>See Twig integration for better HTML integration!</p>')
-        ;
-        $mailer->send($emailInstance);
+            );
+        // Volitelně připrav HTML variantu (zachováš čisté plaintext i pro klienty bez HTML)
+//        $htmlBody = sprintf(
+//            '<p>%s</p>',
+//            htmlspecialchars(str_replace("\n", ' ', $plainText), ENT_QUOTES, 'UTF-8')
+//        );
+        $sender->send(
+    $emailAddress,
+    $subject,
+    $plainText,
+//    [
+//        // 'cc'  => ['cc@example.com'],
+//        // 'bcc' => 'audit@example.com',
+//        'html' => $htmlBody,
+//        // 'replyTo' => 'support@example.com',
+//        // 'priority' => \Symfony\Component\Mime\Email::PRIORITY_NORMAL,
+//    ]
+);
+//        $mailer = new Mailer($transport);
+//        $emailInstance = (new Email())
+//            ->from($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS))
+//            ->to($emailAddress)
+//            //->cc('cc@example.com')
+//            //->bcc('bcc@example.com')
+//            //->replyTo('fabien@example.com')
+//            //->priority(Email::PRIORITY_HIGH)
+//            ->subject($this->configuration->getString(
+//                $this->user->isNewUser() ? AuthConstant::SUBJECT_EMAIL_REGISTRATION : AuthConstant::SUBJECT_EMAIL_LOGIN
+//            ))
+//            ->text($plainText)
+//            //->html('<p>See Twig integration for better HTML integration!</p>')
+//        ;
+//        $mailer->send($emailInstance);
         Debugger::barDump($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS), 'Email sent from');
     }
 }

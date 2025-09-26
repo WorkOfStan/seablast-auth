@@ -10,6 +10,8 @@ use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use Tracy\Debugger;
+use Tracy\ILogger;
 use Webmozart\Assert\Assert;
 
 /**
@@ -36,6 +38,8 @@ class MailOut
 {
     use \Nette\SmartObject;
 
+    /** @var SeablastConfiguration */
+    private $configuration;
     /** @var string Default "From" address used when 'from' option is not provided */
     private $defaultFrom;
     /** @var MailerInterface */
@@ -46,13 +50,14 @@ class MailOut
      */
     public function __construct(SeablastConfiguration $configuration)
     {
-        $dsn = 'smtp://' . $configuration->getString(SeablastConstant::SB_SMTP_HOST) . ':'
-            . (string) $configuration->getInt(SeablastConstant::SB_SMTP_PORT);
+        $this->configuration = $configuration;
+        $dsn = 'smtp://' . $this->configuration->getString(SeablastConstant::SB_SMTP_HOST) . ':'
+            . (string) $this->configuration->getInt(SeablastConstant::SB_SMTP_PORT);
         Assert::stringNotEmpty(
-            $configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS),
+            $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS),
             'Default "from" address `SeablastConstant::FROM_MAIL_ADDRESS` must be a non-empty string.'
         );
-        $this->defaultFrom = $configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS);
+        $this->defaultFrom = $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS);
 
         $transport = Transport::fromDsn($dsn);
         $this->mailer = new Mailer($transport);
@@ -81,6 +86,14 @@ class MailOut
         $from = (isset($options['from']) && is_scalar($options['from']))
             ? (string) $options['from'] : $this->defaultFrom;
         Assert::email($from, 'Invalid "from" e-mail address: %s');
+
+        if(!$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)) {
+            Debugger::log(
+                "Config blocked sending of email - subject: `{$subject}` from: `{$options['from']}` to: `{$to}`",
+                ILogger::WARNING
+            );
+            return;
+        }
 
         $email = (new Email())
             ->from($from)

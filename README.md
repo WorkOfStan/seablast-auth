@@ -114,6 +114,8 @@ Note 3: The new Google Identity Services no longer opens a traditional pop‑up 
 
 ### MailOut::send() method is a generic mail sender built on top of Symfony Mailer
 
+Sending of emails to users MUST be activated, so that `$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)` is true.
+
 ```php
   // Usage:
   use Seablast\Auth\MailOut;

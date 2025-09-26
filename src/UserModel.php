@@ -209,26 +209,26 @@ class UserModel implements SeablastModelInterface
             $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS)
         );
         $subject = $this->configuration->getString(
-                $this->user->isNewUser() ? AuthConstant::SUBJECT_EMAIL_REGISTRATION : AuthConstant::SUBJECT_EMAIL_LOGIN
-            );
+            $this->user->isNewUser() ? AuthConstant::SUBJECT_EMAIL_REGISTRATION : AuthConstant::SUBJECT_EMAIL_LOGIN
+        );
         // Volitelně připrav HTML variantu (zachováš čisté plaintext i pro klienty bez HTML)
 //        $htmlBody = sprintf(
 //            '<p>%s</p>',
 //            htmlspecialchars(str_replace("\n", ' ', $plainText), ENT_QUOTES, 'UTF-8')
 //        );
         $sender->send(
-    $emailAddress,
-    $subject,
-    $plainText
+            $emailAddress,
+            $subject,
+            $plainText
             //,
-//    [
-//        // 'cc'  => ['cc@example.com'],
-//        // 'bcc' => 'audit@example.com',
-//        'html' => $htmlBody,
-//        // 'replyTo' => 'support@example.com',
-//        // 'priority' => \Symfony\Component\Mime\Email::PRIORITY_NORMAL,
-//    ]
-);
+            //    [
+            //        // 'cc'  => ['cc@example.com'],
+            //        // 'bcc' => 'audit@example.com',
+            //        'html' => $htmlBody,
+            //        // 'replyTo' => 'support@example.com',
+            //        // 'priority' => \Symfony\Component\Mime\Email::PRIORITY_NORMAL,
+            //    ]
+        );
 //        $mailer = new Mailer($transport);
 //        $emailInstance = (new Email())
 //            ->from($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS))

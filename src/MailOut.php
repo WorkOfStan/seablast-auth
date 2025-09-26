@@ -76,7 +76,7 @@ class MailOut
         Assert::stringNotEmpty($subject, 'Subject must be a non-empty string.');
 //        Assert::string($textBody, 'Text body must be a string.');
 
-        $from = (isset($options['from']) && is_scalar($options['from'])) 
+        $from = (isset($options['from']) && is_scalar($options['from']))
             ? (string) $options['from'] : $this->defaultFrom;
         Assert::email($from, 'Invalid "from" e-mail address: %s');
 
@@ -94,7 +94,7 @@ class MailOut
 
         // CC (carbon copy) – can be string or array
         if (isset($options['cc']) && (is_string($options['cc']) || is_array($options['cc']))) {
-            if(is_array($options['cc'])) {
+            if (is_array($options['cc'])) {
                 Assert::allString($options['cc']);
             }
             foreach ($this->normalizeEmails($options['cc']) as $cc) {
@@ -104,7 +104,7 @@ class MailOut
 
         // BCC (blind carbon copy) – can be string or array
         if (isset($options['bcc']) && (is_string($options['bcc']) || is_array($options['bcc']))) {
-            if(is_array($options['bcc'])) {
+            if (is_array($options['bcc'])) {
                 Assert::allString($options['bcc']);
             }
             foreach ($this->normalizeEmails($options['bcc']) as $bcc) {
@@ -142,7 +142,7 @@ class MailOut
         }
         //Assert::isArray($value, 'Expected string or array of e-mails.');
         $value = array_values(array_filter($value, static function ($v): bool {
-            return //is_string($v) && 
+            return //is_string($v) &&
             $v !== '';
         }));
         foreach ($value as $addr) {

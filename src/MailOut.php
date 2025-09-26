@@ -52,7 +52,7 @@ class MailOut
             $configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS),
             'Default "from" address `SeablastConstant::FROM_MAIL_ADDRESS` must be a non-empty string.'
         );
-        $this->defaultFrom = $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS);
+        $this->defaultFrom = $configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS);
 
         $transport = Transport::fromDsn($dsn);
         $this->mailer = new Mailer($transport);

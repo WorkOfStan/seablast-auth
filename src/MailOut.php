@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Seablast\Auth;
 
+use Seablast\Seablast\SeablastConfiguration;
+use Seablast\Seablast\SeablastConstant;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
@@ -14,7 +16,8 @@ use Webmozart\Assert\Assert;
  * Generic mail sender built on top of Symfony Mailer.
  *
  * Usage:
- *   $sendMail = new MailOut('smtp://smtp.example.com:587', 'noreply@example.com');
+ *   $sendMail = new MailOut($seablastConfiguration);
+ *   // where dsn builds 'smtp://smtp.example.com:587' and default from is 'noreply@example.com'
  *   $sendMail->send(
  *       to: 'user@example.com',
  *       subject: 'Login link',
@@ -39,21 +42,20 @@ class MailOut
     private $mailer;
 
     /**
-     * @param string|MailerInterface $dsnOrMailer  DSN string like 'smtp://host:port' OR preconfigured MailerInterface
-     * @param string                 $defaultFrom  Fallback sender e-mail address
+     * @param SeablastConfiguration $configuration
      */
-    public function __construct($dsnOrMailer, string $defaultFrom)
+    public function __construct(SeablastConfiguration $configuration)
     {
-        Assert::stringNotEmpty($defaultFrom, 'Default "from" address must be a non-empty string.');
-        $this->defaultFrom = $defaultFrom;
+        $dsn = 'smtp://' . $configuration->getString(SeablastConstant::SB_SMTP_HOST) . ':'
+            . (string) $configuration->getInt(SeablastConstant::SB_SMTP_PORT);
+        Assert::stringNotEmpty(
+            $configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS),
+            'Default "from" address `SeablastConstant::FROM_MAIL_ADDRESS` must be a non-empty string.'
+        );
+        $this->defaultFrom = $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS);
 
-        if ($dsnOrMailer instanceof MailerInterface) {
-            $this->mailer = $dsnOrMailer;
-        } else {
-            Assert::stringNotEmpty($dsnOrMailer, 'Mailer DSN must be a non-empty string or a MailerInterface.');
-            $transport = Transport::fromDsn($dsnOrMailer);
-            $this->mailer = new Mailer($transport);
-        }
+        $transport = Transport::fromDsn($dsn);
+        $this->mailer = new Mailer($transport);
     }
 
     /**
@@ -74,7 +76,7 @@ class MailOut
     {
         Assert::email($to, 'Invalid "to" e-mail address: %s');
         Assert::stringNotEmpty($subject, 'Subject must be a non-empty string.');
-//        Assert::string($textBody, 'Text body must be a string.');
+        //        Assert::string($textBody, 'Text body must be a string.');
 
         $from = (isset($options['from']) && is_scalar($options['from']))
             ? (string) $options['from'] : $this->defaultFrom;
@@ -129,8 +131,7 @@ class MailOut
     }
 
     /**
-     * Normalize string|string[] into array of valid e-mails.
-     * (Normalizuje string nebo pole na pole validních e-mailů.)
+     * Normalize string|string[] into array of valid emails.
      *
      * @param string|string[] $value
      * @return string[]

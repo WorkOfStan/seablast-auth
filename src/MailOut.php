@@ -87,7 +87,7 @@ class MailOut
             ? (string) $options['from'] : $this->defaultFrom;
         Assert::email($from, 'Invalid "from" e-mail address: %s');
 
-        if(!$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)) {
+        if (!$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)) {
             Debugger::log(
                 "Config blocked sending of email - subject: `{$subject}` from: `{$from}` to: `{$to}`",
                 ILogger::WARNING

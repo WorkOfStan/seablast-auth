@@ -89,7 +89,7 @@ class MailOut
 
         if(!$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)) {
             Debugger::log(
-                "Config blocked sending of email - subject: `{$subject}` from: `{$options['from']}` to: `{$to}`",
+                "Config blocked sending of email - subject: `{$subject}` from: `{$from}` to: `{$to}`",
                 ILogger::WARNING
             );
             return;

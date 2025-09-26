@@ -219,7 +219,8 @@ class UserModel implements SeablastModelInterface
         $sender->send(
     $emailAddress,
     $subject,
-    $plainText,
+    $plainText
+            //,
 //    [
 //        // 'cc'  => ['cc@example.com'],
 //        // 'bcc' => 'audit@example.com',

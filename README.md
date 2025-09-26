@@ -111,7 +111,7 @@ Note 2: send-auth-token.js is expected in seablast directory, which needs at lea
 
 Note 3: The new Google Identity Services no longer opens a traditional pop‑up account chooser; instead, it displays the One Tap UI.
 
-### MailOut::send() method is a generic mail sender built on top of Symfony Mailer 
+### MailOut::send() method is a generic mail sender built on top of Symfony Mailer
 
 ```php
   // Usage:

@@ -87,7 +87,8 @@ Note 1: already Seablast::v0.2.5 is using the default settings in the [conf/app.
 
 `send-auth-token.js` (since Seablast::v0.2.10) expects the route `/api/social-login` as configured in [app.conf.php](conf/app.conf.php) and provider either `facebook` or `google`.
 
-Note 2: `const API_BASE = ''; const flags = [];` MUST be defined in javascript. Todo default `/user` MUST have these!
+Note 2: `const API_BASE = ''; const flags = [];` MUST be defined in JavaScript.
+Todo default `/user` MUST have these!
 
 ### View
 

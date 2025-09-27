@@ -25,7 +25,8 @@ fix: initiate `id` for tables as UNSIGNED (not left as default, which is SIGNED)
 
 ### Added
 
-- MailOut method to send emails (Sending of emails to users MUST be activated, so that `$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)` is true.)
+- MailOut method to send emails (Sending of emails to users MUST be activated, so that `$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)` is true.) - logged with `ILogger::INFO` level.
+- `AuthConstant::FROM_MAIL_NAME` to use not just email address but also its name
 
 ### Fixed
 

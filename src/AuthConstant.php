@@ -27,6 +27,10 @@ class AuthConstant
      */
     public const FLAG_USE_SOCIAL_LOGIN = 'AuthApp:FLAG_USE_SOCIAL_LOGIN';
     /**
+     * @var string string email address from which emails are sent
+     */
+    public const FROM_MAIL_NAME = 'AuthApp:SB:FROM_MAIL:NAME';
+    /**
      * @var string Google Client ID
      */
     public const GOOGLE_CLIENT_ID = 'AuthApp:GOOGLE_CLIENT_ID';

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Seablast\Auth;
 
+use Seablast\Auth\AuthConstant;
 use Seablast\Seablast\SeablastConfiguration;
 use Seablast\Seablast\SeablastConstant;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Tracy\Debugger;
 use Tracy\ILogger;
@@ -40,7 +42,7 @@ class MailOut
 
     /** @var SeablastConfiguration */
     private $configuration;
-    /** @var string Default "From" address used when 'from' option is not provided */
+    /** @var Address Default "From" address used when 'from' option is not provided */
     private $defaultFrom;
     /** @var MailerInterface */
     private $mailer;
@@ -57,7 +59,14 @@ class MailOut
             $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS),
             'Default "from" address `SeablastConstant::FROM_MAIL_ADDRESS` must be a non-empty string.'
         );
-        $this->defaultFrom = $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS);
+        if ($this->configuration->exists(AuthConstant::FROM_MAIL_NAME)) {
+            $this->defaultFrom = new Address(
+                $this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS),
+                $this->configuration->getString(AuthConstant::FROM_MAIL_NAME)
+            );
+        } else {
+            $this->defaultFrom = new Address($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS));
+        }
 
         $transport = Transport::fromDsn($dsn);
         $this->mailer = new Mailer($transport);
@@ -84,12 +93,12 @@ class MailOut
         //        Assert::string($textBody, 'Text body must be a string.');
 
         $from = (isset($options['from']) && is_scalar($options['from']))
-            ? (string) $options['from'] : $this->defaultFrom;
-        Assert::email($from, 'Invalid "from" e-mail address: %s');
+            ? new Address((string) $options['from']) : $this->defaultFrom;
+        // Assert::email($from, 'Invalid "from" e-mail address: %s'); // Address does its own email validation
 
         if (!$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)) {
             Debugger::log(
-                "Config blocked sending of email - subject: `{$subject}` from: `{$from}` to: `{$to}`",
+                "Config blocks email sending> subject: `{$subject}` from: `" . $from->getAddress() . "` to: `{$to}`",
                 ILogger::WARNING
             );
             return;
@@ -141,6 +150,7 @@ class MailOut
         }
 
         $this->mailer->send($email);
+        Debugger::log("SENDING " . $from->getAddress() . " -> {$to}/{$subject}", ILogger::INFO);
     }
 
     /**

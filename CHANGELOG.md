@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added` for new features
 
+- FACEBOOK_API_VERSION is 'v21.0' by default, but may be configured by the app
+
 ### `Changed` for changes in existing functionality
 
 - login-social-common-script.latte is invoking errorLogger as argument for `window.sendAuthToken(token, apiRoute, errorLogger);`

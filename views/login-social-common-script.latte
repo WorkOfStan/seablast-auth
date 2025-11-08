@@ -24,7 +24,7 @@
     {if $configuration->flag->status('App:flag:no_user_route')}
         window.sendAuthToken(token, apiRoute, errorLogger); // TODO test user route and alternatives
     {else}
-        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: "{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/user" }); // TODO test user route and alternatives        
+        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: {$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')} + "/user" }); // TODO test user route and alternatives        
     {/if}    
       }
     }

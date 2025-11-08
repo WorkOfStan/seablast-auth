@@ -17,6 +17,7 @@ return static function (SeablastConfiguration $SBConfig): void {
         ->activate(AuthConstant::FLAG_REMEMBER_ME_COOKIE) // TODO check which default makes more sense
     ;
     $SBConfig
+        ->setString(AuthConstant::FACEBOOK_API_VERSION, 'v21.0')
         // /api/social-login is a single end-point , differentiation by provider is done in the parameter provider;
         // so far just facebook, google
         ->setArrayArrayString(

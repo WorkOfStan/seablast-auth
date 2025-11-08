@@ -3,7 +3,7 @@
   globalThis.counterSATTry = 0; // resets the counter even if multiple declarations happen
   {*// Wait for window.sendAuthToken and then pass the token to apiRoute
   // string, string: void *}
-  function passTokenToApi(token, apiRoute) {        
+  function passTokenToApi(token, apiRoute) {
     if (++counterSATTry > 30) {
       console.error('Cannot find sendAuthToken to use ' + apiRoute);
       {* todo let server know *}
@@ -21,7 +21,11 @@
           csrfToken,
         };
         const errorLogger = new ErrorLogger(env.csrfToken, env.API_BASE);
-        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: "/user" }); // TODO test user route
+    {if $configuration->flag->status('App:flag:no_user_route')}
+        window.sendAuthToken(token, apiRoute, errorLogger); // TODO test user route and alternatives
+    {else}
+        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: "{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/user" }); // TODO test user route and alternatives        
+    {/if}    
       }
     }
 </script>

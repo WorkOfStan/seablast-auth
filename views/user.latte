@@ -1,5 +1,8 @@
 {layout '../../seablast/views/BlueprintWeb.latte'}
 {block mainblock}
+    <nav>
+        {include 'inherite.latte', latte => 'nav.latte'}
+    </nav>
   {include 'inherite.latte', latte => 'user-control.latte'}
 {/block}
 {block script}

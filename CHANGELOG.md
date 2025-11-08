@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### `Added` for new features
 
 - FACEBOOK_API_VERSION is 'v21.0' by default, but may be configured by the app
+- add a flag 'AuthApp:FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN') to trigger only reload, while the default behaviour is to go to the USER_ROUTE after a successful social login
 
 ### `Changed` for changes in existing functionality
 

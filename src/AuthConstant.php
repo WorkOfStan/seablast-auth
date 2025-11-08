@@ -31,6 +31,10 @@ class AuthConstant
      */
     public const FLAG_USE_SOCIAL_LOGIN = 'AuthApp:FLAG_USE_SOCIAL_LOGIN';
     /**
+     * @var string Flag: Don't use the AuthApp:USER_ROUTE for social login target page (just reload)
+     */
+    public const FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN = 'AuthApp:FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN';
+    /**
      * @var string string email address from which emails are sent
      */
     public const FROM_MAIL_NAME = 'AuthApp:SB:FROM_MAIL:NAME';

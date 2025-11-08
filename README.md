@@ -72,6 +72,8 @@ Note: sbRememberMe cookie created/read only if the web is accessed over HTTPS an
 but if you want to customize it, configure path to your own template within your app's `conf/app.conf.php` like this:
 
 ```php
+        ->activate('AuthApp:FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN') // just reload (the default behaviour is to go to the USER_ROUTE after a successful social login)
+
         //->setString(AuthConstant::USER_ROUTE, '/user') // can be changed
         ->setArrayArrayString(
             SeablastConstant::APP_MAPPING,
@@ -87,8 +89,7 @@ Note 1: already Seablast::v0.2.5 is using the default settings in the [conf/app.
 
 `send-auth-token.js` (since Seablast::v0.2.10) expects the route `/api/social-login` as configured in [app.conf.php](conf/app.conf.php) and provider either `facebook` or `google`.
 
-Note 2: `const API_BASE = ''; const flags = [];` MUST be defined in JavaScript.
-todo default `/user` MUST have these!
+Note 2: `const API_BASE = ''; const flags = [];` MUST be defined in JavaScript as the default `/user` expects these two variables.
 
 ### View
 

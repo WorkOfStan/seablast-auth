@@ -1,6 +1,6 @@
 <script type="module" src="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/vendor/seablast/seablast/assets/scripts/seablast-bridge.js?v={$configuration->getInt('SB_WEB_FORCE_ASSET_VERSION')}"></script>
 <script>
-  globalThis.counterSATTry = 0; // resets the counter even if multiple declarations happen
+  globalThis.counterSATTry = 0; // resets the counter even if multiple declarations occur
   {*// Wait for window.sendAuthToken and then pass the token to apiRoute
   // string, string: void *}
   function passTokenToApi(token, apiRoute) {
@@ -21,10 +21,10 @@
           csrfToken,
         };
         const errorLogger = new ErrorLogger(env.csrfToken, env.API_BASE);
-    {if $configuration->flag->status('App:flag:no_user_route')}
-        window.sendAuthToken(token, apiRoute, errorLogger); // TODO test user route and alternatives
+    {if $configuration->flag->status('AuthApp:FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN')}
+        window.sendAuthToken(token, apiRoute, errorLogger); // just reload (don't go to `/user`)
     {else}
-        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: {$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')} + "/user" }); // TODO test user route and alternatives        
+        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: {$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')} + {$configuration->getString('AuthApp:USER_ROUTE')} }); // go to user route
     {/if}    
       }
     }

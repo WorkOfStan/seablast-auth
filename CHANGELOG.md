@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Changed` for changes in existing functionality
 
+- login-social-common-script.latte is invoking errorLogger as argument for `window.sendAuthToken(token, apiRoute, errorLogger);`
+
 ### `Deprecated` for soon-to-be removed features
 
 ### `Removed` for now removed features

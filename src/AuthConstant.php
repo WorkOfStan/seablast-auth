@@ -31,10 +31,6 @@ class AuthConstant
      */
     public const FLAG_USE_SOCIAL_LOGIN = 'AuthApp:FLAG_USE_SOCIAL_LOGIN';
     /**
-     * @var string Flag: Don't use the AuthApp:USER_ROUTE for social login target page (just reload)
-     */
-    public const FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN = 'AuthApp:FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN';
-    /**
      * @var string string email address from which emails are sent
      */
     public const FROM_MAIL_NAME = 'AuthApp:SB:FROM_MAIL:NAME';
@@ -42,6 +38,10 @@ class AuthConstant
      * @var string Google Client ID
      */
     public const GOOGLE_CLIENT_ID = 'AuthApp:GOOGLE_CLIENT_ID';
+    /**
+     * @var string Success URL for social login (empty string = just reload)
+     */
+    public const SOCIAL_LOGIN_SUCCESS_URL = 'AuthApp:SOCIAL_LOGIN_SUCCESS_URL';
     /**
      * @var string Subject of login email
      */

@@ -21,11 +21,11 @@
           csrfToken,
         };
         const errorLogger = new ErrorLogger(env.csrfToken, env.API_BASE);
-    {if $configuration->flag->status('AuthApp:FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN')}
-        window.sendAuthToken(token, apiRoute, errorLogger); // just reload (don't go to `/user`)
+    {if $configuration->exists('AuthApp:SOCIAL_LOGIN_SUCCESS_URL') &&  !empty($configuration->getString('AuthApp:SOCIAL_LOGIN_SUCCESS_URL')) }
+        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: {$configuration->getString('AuthApp:SOCIAL_LOGIN_SUCCESS_URL')} }); // go to the success page
     {else}
-        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: {$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')} + {$configuration->getString('AuthApp:USER_ROUTE')} }); // go to user route
-    {/if}    
+        window.sendAuthToken(token, apiRoute, errorLogger); // just reload
+    {/if}
       }
     }
 </script>

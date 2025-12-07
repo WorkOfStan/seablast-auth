@@ -19,6 +19,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+## [0.1.7] - 2025-12-07
+
+fix: initiate `id` for tables explicitly as UNSIGNED
+
+### Added
+
+- MailOut method to send emails (Sending of emails to users MUST be activated, so that `$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)` is true.) - logged with `ILogger::INFO` level.
+- `AuthConstant::FROM_MAIL_NAME` to use not just email address but also its name
+- AuthConstant::FACEBOOK_API_VERSION is 'v21.0' by default, but may be configured by the app
+- if AuthConstant::SOCIAL_LOGIN_SUCCESS_URL is set and not empty, then there will be a social login success page
+
+### Changed
+
+- login-social-common-script.latte is invoking errorLogger as argument for `window.sendAuthToken(token, apiRoute, errorLogger);` - expect seablast 0.2.13 with seablast-bridge.js to link ES modules
+
+### Fixed
+
+- initiate `id` for tables as UNSIGNED (not left as default, which is SIGNED)
+
 ## [0.1.6] - 2025-08-03
 
 fix: injecting Cookie path vs Remember Me cookie conflicts
@@ -109,7 +128,8 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.3...v0.1.4

@@ -1,10 +1,10 @@
-<p n:if="$showLogin">
+<div n:if="$showLogin">
     {* Show form with email and CSRF *}
     <form method="POST">
         <input type="email" name="email" placeholder="vas@email.cz" autofocus="true"/>
         <input type="hidden" value="{$csrfToken}" name="csrfToken"/>
         <input type="submit" value="Ok">
     </form>
-</p>
+</div>
 <p n:if="$showLogout"><a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/?logout">Logout</a></p>
 <p n:if="$message">{$message}</p>

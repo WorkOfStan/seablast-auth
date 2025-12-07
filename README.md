@@ -39,6 +39,16 @@ To create the expected database table structure, just add the seablast/auth migr
     ],
 ```
 
+Following tables will be created (prefixed as set in your app), so avoid conflict with the naming of tables by your app:
+
+- email_token (user)
+- group (user_groups)
+- group_activation_tokens (user_groups)
+- roles (user)
+- session_user (user)
+- users (user)
+- user_group (user_groups)
+
 ### Cookies
 
 IdentityManager expects cookie scope being set already by:
@@ -62,6 +72,8 @@ Note: sbRememberMe cookie created/read only if the web is accessed over HTTPS an
 but if you want to customize it, configure path to your own template within your app's `conf/app.conf.php` like this:
 
 ```php
+        ->activate('AuthApp:FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN') // just reload (the default behaviour is to go to the USER_ROUTE after a successful social login)
+
         //->setString(AuthConstant::USER_ROUTE, '/user') // can be changed
         ->setArrayArrayString(
             SeablastConstant::APP_MAPPING,
@@ -73,9 +85,13 @@ but if you want to customize it, configure path to your own template within your
         )
 ```
 
-Note: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php), so Seablast/Auth configuration is used with v0.2.5 forward.
+Note 1: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php), so Seablast/Auth configuration is used with v0.2.5 forward.
 
 `send-auth-token.js` (since Seablast::v0.2.10) expects the route `/api/social-login` as configured in [app.conf.php](conf/app.conf.php) and provider either `facebook` or `google`.
+
+These arguments `window.sendAuthToken(token, apiRoute, errorLogger);` are processed since Seablast::v0.2.13.
+
+Note 2: `const API_BASE = ''; const flags = [];` MUST be defined in JavaScript as the default `/user` expects these two variables.
 
 ### View
 
@@ -95,9 +111,32 @@ Existence of configuration strings 'FACEBOOK_APP_ID' or 'GOOGLE_CLIENT_ID' imply
 
 Note 1: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
 
-Note 2: send-auth-token.js is expected in seablast directory, which needs at least Seablast v0.2.10.
+Note 2: send-auth-token.js is expected in seablast directory, which needs at least Seablast v0.2.10. (These arguments `window.sendAuthToken(token, apiRoute, errorLogger);` are processed since Seablast::v0.2.13.)
 
 Note 3: The new Google Identity Services no longer opens a traditional pop‑up account chooser; instead, it displays the One Tap UI.
+
+### MailOut::send() method is a generic mail sender built on top of Symfony Mailer
+
+Sending of emails to users MUST be activated, so that `$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)` is true.
+
+```php
+  // Usage:
+  use Seablast\Auth\MailOut;
+  $sendMail = new MailOut('smtp://smtp.example.com:587', 'noreply@example.com');
+  $sendMail->send(
+    to: 'user@example.com',
+    subject: 'Login link',
+    textBody: "Open this URL: https://app.example.com/?token=XYZ",
+    options: [
+      'cc'   => ['cc1@example.com', 'cc2@example.com'], // optional
+      'bcc'  => 'audit@example.com',                    // optional, can be string or array
+      'html' => '<p>Open this URL: <a href="https://app.example.com/?token=XYZ">Login</a></p>', // optional
+      // 'replyTo' => 'support@example.com',           // optional
+      // 'from'    => 'custom-from@example.com',       // optional override of defaultFrom
+      // 'priority'=> Email::PRIORITY_HIGH,            // optional (1..5), default normal
+    ]
+  );
+```
 
 ## Testing
 

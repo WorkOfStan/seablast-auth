@@ -22,9 +22,36 @@ permissions:
   contents: read
 
 jobs:
+  commit-check:
+    runs-on: ubuntu-latest
+    # use permissions because pull-request comments are used
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write # so that it can actually write pr-comments
+    # Limit the running time
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # checkout PR HEAD commit
+          fetch-depth: 0 # required for merge-base check
+          persist-credentials: false
+      - uses: commit-check/commit-check-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # use GITHUB_TOKEN because use of pr-comments
+        with:
+          message: true
+          # to accept dependabot/github_actions/*
+          # branch: false
+          author-name: true
+          author-email: true
+          job-summary: true
+          pr-comments: ${{ github.event_name == 'pull_request' }}
+
   # Note: https://docs.github.com/en/actions/using-workflows/reusing-workflows The strategy property is not supported in any job that calls a reusable workflow.
   php-composer-unit-stan:
-    uses: WorkOfStan/seablast-actions/.github/workflows/php-composer-dependencies-reusable.yml@v0.2.4
+    uses: WorkOfStan/seablast-actions/.github/workflows/php-composer-dependencies-reusable.yml@v0.2.7
     with:
       # JSON
       php-version: '["7.2", "7.3", "7.4", "8.0", "8.1", "8.2", "8.3", "8.4"]'
@@ -35,7 +62,7 @@ jobs:
       runs-on: "ubuntu-latest"
 
   prettier-fix:
-    needs: php-composer-unit-stan
+    needs: [php-composer-unit-stan, commit-check]
     # Note: runs-on doesn't accept all expressions, so a string is used
     runs-on: "ubuntu-latest"
     permissions:
@@ -44,9 +71,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Invoke the Prettier fix
-        uses: WorkOfStan/prettier-fix@v1.1.5
+        uses: WorkOfStan/prettier-fix@v1
         with:
-          commit-changes: true
+          commit-changes: ${{ github.event_name != 'schedule' }}
 
   phpcs-phpcbf:
     needs: prettier-fix
@@ -57,14 +84,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Invoke the PHPCS check and PHPCBF fix
-        uses: WorkOfStan/phpcs-fix@v1.0.2
+        uses: WorkOfStan/phpcs-fix@v1
         with:
-          commit-changes: true
-          php-version: "7.4"
+          commit-changes: ${{ github.event_name != 'schedule' }}
+          php-version: "8.2"
           stop-on-manual-fix: true
 
   super-linter:
     needs: phpcs-phpcbf
-    uses: WorkOfStan/seablast-actions/.github/workflows/linter.yml@v0.2.4
+    uses: WorkOfStan/seablast-actions/.github/workflows/linter.yml@v0.2.7
     with:
       runs-on: "ubuntu-latest"

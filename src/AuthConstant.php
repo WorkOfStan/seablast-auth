@@ -15,6 +15,10 @@ class AuthConstant
      */
     public const FACEBOOK_APP_ID = 'AuthApp:FACEBOOK_APP_ID';
     /**
+     * @var string Facebook API version
+     */
+    public const FACEBOOK_API_VERSION = 'AuthApp:FACEBOOK_API_VERSION';
+    /**
      * @var string Flag: Create/read Remember me cookie for long term login
      */
     public const FLAG_REMEMBER_ME_COOKIE = 'AuthApp:FLAG_REMEMBER_ME_COOKIE';
@@ -27,9 +31,17 @@ class AuthConstant
      */
     public const FLAG_USE_SOCIAL_LOGIN = 'AuthApp:FLAG_USE_SOCIAL_LOGIN';
     /**
+     * @var string string email address from which emails are sent
+     */
+    public const FROM_MAIL_NAME = 'AuthApp:SB:FROM_MAIL:NAME';
+    /**
      * @var string Google Client ID
      */
     public const GOOGLE_CLIENT_ID = 'AuthApp:GOOGLE_CLIENT_ID';
+    /**
+     * @var string Success URL for social login (empty string = just reload)
+     */
+    public const SOCIAL_LOGIN_SUCCESS_URL = 'AuthApp:SOCIAL_LOGIN_SUCCESS_URL';
     /**
      * @var string Subject of login email
      */

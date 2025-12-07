@@ -1,5 +1,6 @@
+<script type="module" src="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/vendor/seablast/seablast/assets/scripts/seablast-bridge.js?v={$configuration->getInt('SB_WEB_FORCE_ASSET_VERSION')}"></script>
 <script>
-  let counterSATTry = 0;  
+  globalThis.counterSATTry = 0; // resets the counter even if multiple declarations occur
   {*// Wait for window.sendAuthToken and then pass the token to apiRoute
   // string, string: void *}
   function passTokenToApi(token, apiRoute) {
@@ -14,9 +15,19 @@
       //console.log('retry ' + counterSATTry + ' till sAT ready', token, apiRoute);
       setTimeout(passTokenToApi, 320, token, apiRoute);
     } else {
-      window.sendAuthToken(token, apiRoute);
+        /** @type import('./vendor/seablast/seablast/assets/scripts/Environment.js').Environment */
+        const env = {
+          API_BASE,
+          csrfToken,
+        };
+        const errorLogger = new ErrorLogger(env.csrfToken, env.API_BASE);
+    {if $configuration->exists('AuthApp:SOCIAL_LOGIN_SUCCESS_URL') &&  !empty($configuration->getString('AuthApp:SOCIAL_LOGIN_SUCCESS_URL')) }
+        window.sendAuthToken(token, apiRoute, errorLogger, { userRoute: {$configuration->getString('AuthApp:SOCIAL_LOGIN_SUCCESS_URL')} }); // go to the success page
+    {else}
+        window.sendAuthToken(token, apiRoute, errorLogger); // just reload
+    {/if}
+      }
     }
-  }
 </script>
 {* vendor/seablast is accessible for Seablast apps, so the web browser assets used by plugins MUST be put into assets folder of the Seablast library *}
-<script type="module" src="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/vendor/seablast/seablast/assets/scripts/send-auth-token.js?v={$configuration->getInt('SB_WEB_FORCE_ASSET_VERSION')}"></script>
+<script src="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/vendor/seablast/seablast/assets/scripts/send-auth-token.js?v={$configuration->getInt('SB_WEB_FORCE_ASSET_VERSION')}"></script>

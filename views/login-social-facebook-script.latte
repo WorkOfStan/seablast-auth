@@ -5,7 +5,7 @@
       appId: {$configuration->getString('AuthApp:FACEBOOK_APP_ID')},
       cookie: true,
       xfbml: true,
-      version: 'v21.0' // Use the latest version {* Todo parametric in sb/auth-conf *}
+      version: {$configuration->getString('AuthApp:FACEBOOK_API_VERSION')}
     });
 
     FB.AppEvents.logPageView();

@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.7] - 2025-12-07
 
-fix: initiate `id` for tables as UNSIGNED (not left as default, which is SIGNED)
+fix: initiate `id` for tables explicitly as UNSIGNED
 
 ### Added
 

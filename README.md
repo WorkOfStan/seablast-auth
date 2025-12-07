@@ -89,6 +89,8 @@ Note 1: already Seablast::v0.2.5 is using the default settings in the [conf/app.
 
 `send-auth-token.js` (since Seablast::v0.2.10) expects the route `/api/social-login` as configured in [app.conf.php](conf/app.conf.php) and provider either `facebook` or `google`.
 
+These arguments `window.sendAuthToken(token, apiRoute, errorLogger);` are processed since Seablast::v0.2.13.
+
 Note 2: `const API_BASE = ''; const flags = [];` MUST be defined in JavaScript as the default `/user` expects these two variables.
 
 ### View
@@ -109,7 +111,7 @@ Existence of configuration strings 'FACEBOOK_APP_ID' or 'GOOGLE_CLIENT_ID' imply
 
 Note 1: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
 
-Note 2: send-auth-token.js is expected in seablast directory, which needs at least Seablast v0.2.10.
+Note 2: send-auth-token.js is expected in seablast directory, which needs at least Seablast v0.2.10. (These arguments `window.sendAuthToken(token, apiRoute, errorLogger);` are processed since Seablast::v0.2.13.)
 
 Note 3: The new Google Identity Services no longer opens a traditional pop‑up account chooser; instead, it displays the One Tap UI.
 

@@ -29,5 +29,5 @@
       }
     }
 </script>
-{* vendor/seablast is accessible for Seablast apps, so the web browser assets used by plugins MUST be put into assets folder of the Seablast library *}
-<script src="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/vendor/seablast/seablast/assets/scripts/send-auth-token.js?v={$configuration->getInt('SB_WEB_FORCE_ASSET_VERSION')}"></script>
+{* vendor/seablast is accessible for Seablast apps, so the web browser assets used by plugins MUST be put into assets folder of the Seablast library; defer is used so that jQuery is loaded even if it is linked in the HTML code after linking this js *}
+<script defer src="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}/vendor/seablast/seablast/assets/scripts/send-auth-token.js?v={$configuration->getInt('SB_WEB_FORCE_ASSET_VERSION')}"></script>

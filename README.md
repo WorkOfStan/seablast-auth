@@ -72,8 +72,6 @@ Note: sbRememberMe cookie created/read only if the web is accessed over HTTPS an
 but if you want to customize it, configure path to your own template within your app's `conf/app.conf.php` like this:
 
 ```php
-        ->activate('AuthApp:FLAG_USER_ROUTE_NOT_USED_FOR_SOCIAL_LOGIN') // just reload (the default behaviour is to go to the USER_ROUTE after a successful social login)
-
         //->setString(AuthConstant::USER_ROUTE, '/user') // can be changed
         ->setArrayArrayString(
             SeablastConstant::APP_MAPPING,
@@ -83,6 +81,12 @@ but if you want to customize it, configure path to your own template within your
                 'model' => '\Seablast\Auth\UserModel',
             ]
         )
+```
+
+The successful login behaviour is reload the current page or go to a social login success page:
+
+```php
+        ->setString(AuthConstant::SOCIAL_LOGIN_SUCCESS_URL, '') // empty OR not set => just reload; otherwise go to the fully qualified URL of a social login success page
 ```
 
 Note 1: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php), so Seablast/Auth configuration is used with v0.2.5 forward.
@@ -146,3 +150,8 @@ Run [./test.sh](./test.sh) for essential PHPUnit tests:
 - check its disapperance as it's valid only once,
 - invalid emails is not accepted,
 - SQL injection attempts is not accepted.
+
+##  TODO
+
+- 251227, success email token login/logout page
+- 251227, define also (social login) logout page

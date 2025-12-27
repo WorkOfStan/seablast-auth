@@ -39,7 +39,7 @@ class AuthConstant
      */
     public const GOOGLE_CLIENT_ID = 'AuthApp:GOOGLE_CLIENT_ID';
     /**
-     * @var string Success URL for social login (empty string = just reload)
+     * @var string A fully qualified URL for a social login success page (empty string = just reload)
      */
     public const SOCIAL_LOGIN_SUCCESS_URL = 'AuthApp:SOCIAL_LOGIN_SUCCESS_URL';
     /**

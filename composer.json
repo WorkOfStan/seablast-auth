@@ -3,14 +3,14 @@
   "description": "No-password authentication and authorisation library for Seablast for PHP",
   "type": "library",
   "require": {
-    "php": ">=7.2 <8.5",
-    "guzzlehttp/guzzle": "^7.8",
-    "nette/utils": "^3.2.10 || ^4.0.5",
+    "php": ">=7.2 <8.6",
+    "guzzlehttp/guzzle": "6.5.8 || ^7.8",
+    "nette/utils": "^3.2.10 || ^4.0.5 || ^4.1.0",
     "robmorgan/phinx": "^0.12.13 || ^0.13.4 || ^0.14.0 || ^0.15.5 || ^0.16.5",
     "seablast/interfaces": "^0.1.1",
-    "symfony/mailer": "^4.4.49 || ^5 || ^6 || ^7",
-    "symfony/security-csrf": "^4.4.37 || ^5 || ^6 || ^7",
-    "tracy/tracy": "^2.9.8 || ^2.10.9",
+    "symfony/mailer": "^4.4.49 || ^5 || ^6 || ^7 || ^8",
+    "symfony/security-csrf": "^4.4.37 || ^5 || ^6 || ^7 || ^8",
+    "tracy/tracy": "^2.9.8 || ^2.10.9 || ^2.11.0",
     "webmozart/assert": "^1.10.0"
   },
   "require-dev": {

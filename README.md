@@ -151,7 +151,7 @@ Run [./test.sh](./test.sh) for essential PHPUnit tests:
 - invalid emails is not accepted,
 - SQL injection attempts is not accepted.
 
-##  TODO
+## TODO
 
 - 251227, success email token login/logout page
 - 251227, define also (social login) logout page

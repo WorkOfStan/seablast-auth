@@ -1,12 +1,12 @@
-# `Seablast\Auth`
+# Seablast Auth
 
 A no-password authentication and authorization extension for [Seablast for PHP](https://github.com/WorkOfStan/seablast) apps.
 This extension facilitates secure user verification and efficient access control.
 
-Optionally, `Seablast\Auth` has a ligthweight integration with Google and Facebook to support social authentication, allowing seamless sign-in through various social media platforms.
+Optionally, Seablast Auth has a ligthweight integration with Google and Facebook to support social authentication, allowing seamless sign-in through various social media platforms.
 Integrable via Composer, it activates only when required, equipping your app with essential security features effortlessly.
-If your Seablast-based application necessitates user authentication or resource authorization, incorporating `Seablast\Auth` will equip it with these capabilities instantly.
-(For applications that do not require these features, `Seablast\Auth` can simple be not included to maintain a lighter application footprint.)
+If your Seablast-based application necessitates user authentication or resource authorization, incorporating Seablast Auth will equip it with these capabilities instantly.
+(For applications that do not require these features, Seablast Auth can simple be not included to maintain a lighter application footprint.)
 
 ## User management
 
@@ -89,7 +89,7 @@ The successful login behaviour is reload the current page or go to a social logi
         ->setString(AuthConstant::SOCIAL_LOGIN_SUCCESS_URL, '') // empty OR not set => just reload; otherwise go to the fully qualified URL of a social login success page
 ```
 
-Note 1: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php), so Seablast/Auth configuration is used with v0.2.5 forward.
+Note 1: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php), so Seablast Auth configuration is used with v0.2.5 forward.
 
 `send-auth-token.js` (since Seablast::v0.2.10) expects the route `/api/social-login` as configured in [app.conf.php](conf/app.conf.php) and provider either `facebook` or `google`.
 
@@ -121,7 +121,7 @@ Note 3: The new Google Identity Services no longer opens a traditional pop‑up 
 
 ### MailOut::send() method is a generic mail sender built on top of Symfony Mailer
 
-Sending of emails to users MUST be activated, so that `$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)` is true.
+In order to send emails, the `SeablastConstant::USER_MAIL_ENABLED` flag MUST be activated.
 
 ```php
   // Usage:

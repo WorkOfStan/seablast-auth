@@ -500,7 +500,7 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Cookie path injection.
      *
-     * As '' may change (between /app and /app/user) causing cookie conflicts.
+     * As the default relative path '' may change (between /app and /app/user) causing cookie conflicts.
      *
      * @param string $cookiePath
      * @return void

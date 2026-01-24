@@ -1,6 +1,6 @@
 #!/bin/bash
 # blast.sh - Management script for deployment and development of a Seablast application
-# Seablast:v0.2.11
+# Seablast:v0.2.14
 # Usage:
 #   ./blast.sh                          # Runs assemble + creates required folders + checks web inaccessibility
 #   ./blast.sh --base-url http://localhost  # Checks if defined folders are inaccessible at http://localhost
@@ -60,7 +60,7 @@ setup_environment() {
 
 	# conf/phinx.local.php or at least conf/phinx.dist.php is required
 	if [[ ! -f "conf/phinx.local.php" ]]; then
-		[[ ! -f "conf/phinx.dist.php" ]] && display_warning "phinx config is required for a Seablast app" && exit 0
+		[[ ! -f "conf/phinx.dist.php" ]] && display_warning "conf/phinx.dist.php template is required for a Seablast app" && exit 0
 		cp -p conf/phinx.dist.php conf/phinx.local.php && display_warning "Check/modify the newly created conf/phinx.local.php"
 		exit 0
 	fi
@@ -72,7 +72,7 @@ run_phpunit() {
 		display_header "-- Running PHPUnit --"
 		vendor/bin/phpunit
 	else
-		display_warning "NO phpunit.xml CONFIGURATION"
+		display_warning "NO phpunit.xml CONFIGURATION, no PHPUnit testing"
 	fi
 }
 
@@ -84,7 +84,7 @@ assemble() {
 	display_header "-- Running database migrations --"
 	vendor/bin/phinx migrate -e development --configuration ./conf/phinx.local.php
 	display_header "-- Running database TESTING migrations --"
-	# In order to properly unit test all features, set-up a test database, put its credentials to testing section of phinx.yml and run phinx migrate -e testing before phpunit
+	# In order to properly unit test all features, set-up a test database, put its credentials to testing section of the phinx configuration file and run phinx migrate -e testing before phpunit
 	# Drop tables in the testing database if changes were made to migrations
 	vendor/bin/phinx migrate -e testing --configuration ./conf/phinx.local.php
 
@@ -108,9 +108,12 @@ run_phpstan() {
 	composer install -a --prefer-dist --no-progress
 	display_header "-- Installing PHPStan (via Webmozart Assert plugin to allow for Assertions during static analysis) --"
 	composer require --dev phpstan/phpstan-webmozart-assert --prefer-dist --no-progress --with-all-dependencies
-	# TODO check if phpstan/phpstan-phpunit is needed
-	display_header "-- As PHPUnit>=7 is used the PHPUnit plugin is used for better compatibility ... --"
-	composer require --dev phpstan/phpstan-phpunit --prefer-dist --no-progress --with-all-dependencies
+	if [[ -f "phpunit.xml" ]]; then
+		display_header "-- As PHPUnit>=7 is used the PHPUnit plugin is used for better compatibility ... --"
+		composer require --dev phpstan/phpstan-phpunit --prefer-dist --no-progress --with-all-dependencies
+	else
+		display_warning "NO phpunit.xml CONFIGURATION, no PHPStan PHPUnit plugin required"
+	fi
 
 	run_phpunit
 
@@ -122,6 +125,7 @@ run_phpstan() {
 # Removes PHPStan package
 phpstan_remove() {
 	display_header "-- Removing PHPStan package --"
+	# It doesn't matter if phpstan/phpstan-phpunit was not required before
 	composer remove --dev phpstan/phpstan-phpunit
 	composer remove --dev phpstan/phpstan-webmozart-assert
 }

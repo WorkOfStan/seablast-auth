@@ -111,7 +111,7 @@ Note 2: vendor/seablast is accessible for Seablast apps, so the web browser asse
 
 ### Social login
 
-Existence of configuration strings 'FACEBOOK_APP_ID' or 'GOOGLE_CLIENT_ID' imply option to login by these platforms respectively.
+Existence of configuration strings `FACEBOOK_APP_ID` or `GOOGLE_CLIENT_ID` imply option to login by these platforms respectively.
 
 Note 1: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
 
@@ -148,7 +148,7 @@ Run [./test.sh](./test.sh) for essential PHPUnit tests:
 
 - create token and use it,
 - check its disapperance as it's valid only once,
-- invalid emails is not accepted,
+- an invalid email format is not accepted,
 - SQL injection attempts is not accepted.
 
 ## TODO

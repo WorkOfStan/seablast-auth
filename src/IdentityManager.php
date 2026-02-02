@@ -110,11 +110,11 @@ class IdentityManager implements IdentityManagerInterface
         }
     }
 
-private function deleteSessionToken(string $token): void
+    private function deleteSessionToken(string $token): void
     {
-  $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '" . $token . "';");
+        $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '" . $token . "';");
     }
-    
+
     /**
      * Checks if the Remember Me cookie matches.
      *

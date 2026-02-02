@@ -110,6 +110,11 @@ class IdentityManager implements IdentityManagerInterface
         }
     }
 
+private function deleteSessionToken(string $token): void
+    {
+  $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '" . $token . "';");
+    }
+    
     /**
      * Checks if the Remember Me cookie matches.
      *
@@ -409,15 +414,17 @@ class IdentityManager implements IdentityManagerInterface
     public function logout(): void
     {
         Assert::string($_SESSION['sbSessionToken']);
-        $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
-            . $_SESSION['sbSessionToken'] . "';");
+     //   $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
+       //     . $_SESSION['sbSessionToken'] . "';");
+        $this->deleteSessionToken($_SESSION['sbSessionToken']);
         unset($_SESSION['sbSessionToken']);
         // todo remove csrf tokens from this browser context
         // Remove "Remember Me" cookie if it exists both from database and from cookies
         if (isset($_COOKIE['sbRememberMe'])) {
             Assert::string($_COOKIE['sbRememberMe']);
-            $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
-                . (string) $_COOKIE['sbRememberMe'] . "';");
+        //    $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
+        //        . (string) $_COOKIE['sbRememberMe'] . "';");
+                    $this->deleteSessionToken($_COOKIE['sbRememberMe']);
             $this->setCookie('', time() - 3600);
         }
         $this->isAuthenticated = false;

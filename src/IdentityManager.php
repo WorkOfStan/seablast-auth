@@ -191,7 +191,7 @@ class IdentityManager implements IdentityManagerInterface
      *
      * Implementation of Seablast\Seablast\IdentityManagerInterface.
      *
-     * @return int[] An array of group IDs.
+     * @return array<int> An array of group IDs.
      */
     public function getGroups(): array
     {

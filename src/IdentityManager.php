@@ -34,8 +34,8 @@ class IdentityManager implements IdentityManagerInterface
     private $cookiePath = '';
     /** @var string User email. */
     private $email;
-    /** @var bool Authentication status. */
-    private $isAuthenticated = false;
+    /** x@ var bool Authentication status. */
+    //private $isAuthenticated = false;
     /** @var ?bool Flag indicating if the user trying to authenticate is a new user. */
     private $isNewUser = null;
     /** @var \mysqli Database connection. */
@@ -281,11 +281,11 @@ class IdentityManager implements IdentityManagerInterface
 
     if ($userId === null) {
         // todo doYouRememberMe?
-        return $this->isAuthenticated = false;
+        return false;
     }
 
     $this->populateUserById($userId);
-    return $this->isAuthenticated = true;
+    return true;
 }
 
     /**
@@ -425,7 +425,8 @@ class IdentityManager implements IdentityManagerInterface
                     $this->deleteSessionToken($_COOKIE['sbRememberMe']);
             $this->setCookie('', time() - 3600);
         }
-        $this->isAuthenticated = false;
+        //$this->isAuthenticated = false;
+        //todo make sure that seablast knows, i.e. invalidate SB_ROLE_ID and USER_ID
     }
 
     /**
@@ -465,7 +466,7 @@ class IdentityManager implements IdentityManagerInterface
     private function populateUserById(int $userId): void
     {
         $row = $this->fetchFirstRow("SELECT email, role_id FROM `{$this->tablePrefix}users` WHERE id = "
-            . (int) $userId . ";");
+            . (int) $userId . " LIMIT 1;");
         if (is_null($row)) {
             throw new UserException('An existing user expected.');
         }

@@ -146,6 +146,8 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Fetches the first row of a query result.
      *
+     * TODO: add ORDER BY to queries, and as there's a LIMIT 1, get rid off this method, use queryStrict
+     *
      * @param string $query SQL query string.
      * @return array<?scalar>|null Associative array of the row or null if no rows.
      * @throws DbmsException on database statement error
@@ -253,7 +255,7 @@ class IdentityManager implements IdentityManagerInterface
         $pastDate = $oneDayTillNow->format('Y-m-d H:i:s');
         Debugger::barDump($pastDate, 'Past date'); // debug
         $row = $this->fetchFirstRow("SELECT user_id, updated FROM `{$this->tablePrefix}session_user` WHERE token = '"
-            . $sessionTokenEscaped . "' AND updated > '" . $pastDate . "';");
+            . $sessionTokenEscaped . "' AND updated > '" . $pastDate . "' LIMIT 1;");
         if (is_null($row)) {
             return null;
         }
@@ -273,22 +275,18 @@ class IdentityManager implements IdentityManagerInterface
      * @return bool True if authenticated, false otherwise.
      */
     public function isAuthenticated(): bool
-    {
-        $sessionId = $_SESSION['sbSessionToken'] ?? null;
-        if (is_null($sessionId) || !is_string($sessionId)) {
-            // todo doYouRememberMe?
-            $this->isAuthenticated = false;
-        } else {
-            $userId = $this->getUserForSessionId($sessionId);
-            if (is_null($userId)) {
-                $this->isAuthenticated = false;
-            } else {
-                $this->isAuthenticated = true;
-                $this->populateUserById($userId);
-            }
-        }
-        return $this->isAuthenticated;
+{
+    $sessionId = $_SESSION['sbSessionToken'] ?? null;
+    $userId = is_string($sessionId) ? $this->getUserForSessionId($sessionId) : null;
+
+    if ($userId === null) {
+        // todo doYouRememberMe?
+        return $this->isAuthenticated = false;
     }
+
+    $this->populateUserById($userId);
+    return $this->isAuthenticated = true;
+}
 
     /**
      * Checks whether the current request was made using HTTPS.
@@ -356,7 +354,7 @@ class IdentityManager implements IdentityManagerInterface
     {
         $row = $this->fetchFirstRow(
             "SELECT id, email FROM `{$this->tablePrefix}email_token` WHERE token = '" . $emailToken
-            . "' AND created > (NOW() - INTERVAL 15 MINUTE);"
+            . "' AND created > (NOW() - INTERVAL 15 MINUTE) LIMIT 1;"
         );
         if (is_null($row)) {
             return false;
@@ -442,7 +440,7 @@ class IdentityManager implements IdentityManagerInterface
     private function populateUserByEmail(string $email): void
     {
         $row = $this->fetchFirstRow("SELECT id, role_id FROM `{$this->tablePrefix}users` WHERE email = '"
-            . (string) $email . "';");
+            . (string) $email . "' LIMIT 1;");
         if (is_null($row)) {
             throw new UserException('An existing user expected.');
         }

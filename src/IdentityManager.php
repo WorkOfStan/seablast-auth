@@ -275,18 +275,18 @@ class IdentityManager implements IdentityManagerInterface
      * @return bool True if authenticated, false otherwise.
      */
     public function isAuthenticated(): bool
-{
-    $sessionId = $_SESSION['sbSessionToken'] ?? null;
-    $userId = is_string($sessionId) ? $this->getUserForSessionId($sessionId) : null;
+    {
+        $sessionId = $_SESSION['sbSessionToken'] ?? null;
+        $userId = is_string($sessionId) ? $this->getUserForSessionId($sessionId) : null;
 
-    if ($userId === null) {
-        // todo doYouRememberMe?
-        return false;
+        if ($userId === null) {
+            // todo doYouRememberMe?
+            return false;
+        }
+
+        $this->populateUserById($userId);
+        return true;
     }
-
-    $this->populateUserById($userId);
-    return true;
-}
 
     /**
      * Checks whether the current request was made using HTTPS.

@@ -75,7 +75,8 @@ class UserModel implements SeablastModelInterface
             return (object) [
                     'showLogin' => false,
                     'showLogout' => true,
-                    'message' => 'Nyní jste přihlášeni jako ' . $this->user->getEmail() . ', užijte si to.',
+                    'message' => 'Nyní jste přihlášeni jako ' .
+                        $this->user->getEmail() . ', užijte si to.',
             ];
         }
         if ($this->superglobals->server['REQUEST_METHOD'] === 'GET') {
@@ -125,8 +126,8 @@ class UserModel implements SeablastModelInterface
             return (object) [
                     'showLogin' => true,
                     'showLogout' => false,
-                    'message' => 'Zalogujte se. Na zadaný email vám přijde webová adresa, přes kterou se přihlásíte.'
-                    . ' Žádná hesla nejsou třeba.',
+                    'message' => 'Zalogujte se. Na zadaný email vám přijde webová adresa, '
+                        . 'přes kterou se přihlásíte. Žádná hesla nejsou třeba.',
             ];
         } elseif ($this->superglobals->server['REQUEST_METHOD'] === 'POST') {
             if ((isset($this->superglobals->post['csrfToken'])) && (isset($this->superglobals->post['email']))) {

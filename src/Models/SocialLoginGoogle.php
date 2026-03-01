@@ -66,7 +66,10 @@ class SocialLoginGoogle
                 Debugger::barDump($response->getBody()->getContents(), "Unexpected API response");
             } else {
                 $isAudValid = ($data['aud'] === $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID));
-                $isIssValid = ($data['iss'] === 'https://accounts.google.com' || $data['iss'] === 'accounts.google.com');
+                $isIssValid = (
+                    $data['iss'] === 'https://accounts.google.com'
+                    || $data['iss'] === 'accounts.google.com'
+                );
                 $isExpValid = true;
                 if (isset($data['exp'])) {
                     // exp is in seconds since epoch

@@ -68,11 +68,13 @@ class IdentityManager implements IdentityManagerInterface
         // Validate existence of the user or create it
         // Select email From users and if nothing returned, then INSERT email INTO users
         // (Note never loggedin users older than 15 minutes are destroyed) <- TODO
-        Assert::email($email); // TODO more specific Exception to catch exactly it in a PHPUnit test
-        $result = $this->mysqli->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '"
-            . (string) $email . "';");
-        if (is_bool($result) || !$result->fetch_assoc()) {
-            $this->mysqli->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . (string) $email
+        // Validate email format. Throwing the generic InvalidArgumentException from Webmozart is acceptable
+        // for now; tests can catch it specifically if desired.
+        Assert::email($email);
+        $escapedEmail = $this->mysqli->real_escape_string($email);
+        $result = $this->mysqli->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '" . $escapedEmail . "' LIMIT 1;");
+        if ($result === false || $result->num_rows === 0) {
+            $this->mysqli->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . $escapedEmail
                 . "', CURRENT_TIMESTAMP);"); // todo assert insert doesn't fail
             // Note: If the number is greater than maximal int value, mysqli_insert_id() will return a string.
             $this->userId = (int) $this->mysqli->insert_id;

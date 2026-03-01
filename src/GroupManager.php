@@ -60,14 +60,17 @@ class GroupManager
     public function activateGroupByToken(string $token): int
     {
         // Check token validity
+        // Compare token case-insensitively to avoid issues with letter case.
+        // Using LOWER() on both sides is portable across MySQL/MariaDB.
+        $escapedToken = $this->mysqli->real_escape_string($token);
         $resultToken = $this->mysqli->query('SELECT * FROM `' . $this->tablePrefix
-            . 'group_activation_tokens` WHERE token = "' . $this->mysqli->real_escape_string($token)
-            . '" AND valid_from <= NOW() AND valid_to >= NOW();');
-        if (is_bool($resultToken)) {
+            . 'group_activation_tokens` WHERE LOWER(token) = LOWER("' . $escapedToken
+            . '") AND valid_from <= NOW() AND valid_to >= NOW() LIMIT 1;');
+        if ($resultToken === false) {
             throw new DbmsException('Db expected.');
         }
-        $tokenData = $resultToken->fetch_assoc(); // fetch first row, it should be the only one, anyway
-        Debugger::barDump($tokenData, 'tokenData');
+        $tokenData = $resultToken->fetch_assoc(); // fetch first row
+        // Debug information removed; return wrong token status when not found.
         if (!$tokenData) {
             return self::ACTIVATION_WRONG_TOKEN;
         }

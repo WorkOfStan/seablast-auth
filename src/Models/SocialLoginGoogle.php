@@ -61,19 +61,22 @@ class SocialLoginGoogle
         if ($response->getStatusCode() === 200) {
             $data = json_decode($response->getBody()->getContents(), true);
             // Response conforms to https://github.com/firebase/php-jwt
-            // Validate the audience, issuer, etc.
-            // TODO check also $data['exp']
+            // Validate the audience, issuer, and expiration if present.
             if ($data === false || !is_array($data)) {
                 Debugger::barDump($response->getBody()->getContents(), "Unexpected API response");
-            } elseif (
-                $data['aud'] === $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID) &&
-                $data['iss'] === 'https://accounts.google.com'
-            ) {
-                //echo "Token is valid. User information:";
-                Assert::allString($data);
-                return $data;
             } else {
-                Debugger::barDump($data, 'Token is invalid or audience does not match.');
+                $isAudValid = ($data['aud'] === $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID));
+                $isIssValid = ($data['iss'] === 'https://accounts.google.com' || $data['iss'] === 'accounts.google.com');
+                $isExpValid = true;
+                if (isset($data['exp'])) {
+                    // exp is in seconds since epoch
+                    $isExpValid = (is_numeric($data['exp']) && (int) $data['exp'] > time());
+                }
+                if ($isAudValid && $isIssValid && $isExpValid) {
+                    Assert::allString($data);
+                    return $data;
+                }
+                Debugger::barDump($data, 'Token is invalid, audience/issuer mismatch or expired.');
             }
         } else {
             Debugger::barDump(

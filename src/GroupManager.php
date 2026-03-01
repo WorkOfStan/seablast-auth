@@ -69,8 +69,10 @@ class GroupManager
         if ($resultToken === false) {
             throw new DbmsException('Db expected.');
         }
+        // Ensure static analyzers know we have a mysqli_result here
+        Assert::isInstanceOf($resultToken, \mysqli_result::class);
         $tokenData = $resultToken->fetch_assoc(); // fetch first row
-        // Debug information removed; return wrong token status when not found.
+        // Return wrong token status when not found.
         if (!$tokenData) {
             return self::ACTIVATION_WRONG_TOKEN;
         }

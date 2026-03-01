@@ -73,7 +73,12 @@ class IdentityManager implements IdentityManagerInterface
         Assert::email($email);
         $escapedEmail = $this->mysqli->real_escape_string($email);
         $result = $this->mysqli->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '" . $escapedEmail . "' LIMIT 1;");
-        if ($result === false || $result->num_rows === 0) {
+        if ($result === false) {
+            throw new DbmsException($this->mysqli->errno . ': ' . $this->mysqli->error);
+        }
+        // Ensure static analyzers know we have a mysqli_result here
+        Assert::isInstanceOf($result, \mysqli_result::class);
+        if ($result->num_rows === 0) {
             $this->mysqli->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . $escapedEmail
                 . "', CURRENT_TIMESTAMP);"); // todo assert insert doesn't fail
             // Note: If the number is greater than maximal int value, mysqli_insert_id() will return a string.

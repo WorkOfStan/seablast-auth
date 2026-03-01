@@ -72,7 +72,9 @@ class IdentityManager implements IdentityManagerInterface
         // for now; tests can catch it specifically if desired.
         Assert::email($email);
         $escapedEmail = $this->mysqli->real_escape_string($email);
-        $result = $this->mysqli->query("SELECT email FROM `{$this->tablePrefix}users` WHERE email = '" . $escapedEmail . "' LIMIT 1;");
+        $query = "SELECT email FROM `{$this->tablePrefix}users` WHERE email = '" . $escapedEmail
+            . "' LIMIT 1;";
+        $result = $this->mysqli->query($query);
         if ($result === false) {
             throw new DbmsException($this->mysqli->errno . ': ' . $this->mysqli->error);
         }

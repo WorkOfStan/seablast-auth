@@ -46,6 +46,7 @@ feat: use cryptographically secure random bytes for session tokens
 - Google tokeninfo validation now handles missing or malformed `aud`, `iss`, `email`, and `exp` fields safely.
 - Group activation token lookup is explicitly case-insensitive and limited to one matching token.
 - Readme `MailOut` usage now matches the `MailOut(SeablastConfiguration $configuration)` constructor.
+- Removes never-logged-in users older than 15 minutes before creating or reusing login users.
 
 ### Security
 

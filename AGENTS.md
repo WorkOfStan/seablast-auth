@@ -14,7 +14,7 @@ Key runtime classes:
 
 ## Change Rules
 
-- Never remove comments unless the comment is a TODO that the change fully solves; stale comments should be rewritten in accurate English.
+- Never remove comments unless the comment is a todo that the change fully solves; stale comments should be rewritten in accurate English.
 - Keep `CHANGELOG.md` updated in English for user-visible or security-relevant changes.
 - Update this `AGENTS.md` when agent-facing setup, commands, or project conventions change.
 - Treat this as auth/security-sensitive code: do not log raw login tokens, OAuth tokens, email tokens, session tokens, or Remember Me tokens.

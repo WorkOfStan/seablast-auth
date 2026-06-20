@@ -36,6 +36,7 @@ feat: use cryptographically secure random bytes for session tokens
 - Adjusted GitHub workflow permissions comments for pull-request comments.
 - Replaced session `uniqid()` values with random tokens from the existing token generator.
 - `SocialLoginGoogle` accepts an optional Guzzle client for isolated testing.
+- Update session access timestamp writes to run only after five minutes of inactivity.
 
 ### Fixed
 

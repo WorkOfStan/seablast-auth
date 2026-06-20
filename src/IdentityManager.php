@@ -301,13 +301,17 @@ class IdentityManager implements IdentityManagerInterface
         if (is_null($row)) {
             return null;
         }
-        // Update last access
-        // TODO prolongate session only if the previous access is older than 5 minutes to reduce SQL load
+        // Update last access when the saved timestamp is stale enough.
         Debugger::barDump($row, 'User for session'); // debug
-        $this->executeWriteQuery(
-            "UPDATE `{$this->tablePrefix}session_user` SET updated = CURRENT_TIMESTAMP WHERE token = '"
-            . $sessionTokenEscaped . "';"
-        );
+        $fiveMinutesAgo = date('Y-m-d H:i:s', time() - 300);
+        if ((string) $row['updated'] < $fiveMinutesAgo) {
+            $this->executeWriteQuery(
+                "UPDATE `{$this->tablePrefix}session_user` SET updated = CURRENT_TIMESTAMP WHERE token = '"
+                . $sessionTokenEscaped . "';"
+            );
+        } else {
+            Debugger::barDump('No session update as younger than 5 minutes');
+        }
         return (int) $row['user_id'];
     }
 

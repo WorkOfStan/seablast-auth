@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Seablast\Auth\Models;
 
+use Seablast\Auth\AuthConstant;
 use Seablast\Auth\IdentityManager;
 use Seablast\Seablast\Apis\GenericRestApiJsonModel;
 use Seablast\Seablast\SeablastConfiguration;
@@ -58,6 +59,9 @@ class ApiSocialLoginModel extends GenericRestApiJsonModel
             $this->identity->setCookiePath(
                 $this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH)
             );
+            $this->identity->setRememberMeCookieEnabled(
+                $this->configuration->flag->status(AuthConstant::FLAG_REMEMBER_ME_COOKIE)
+            );
             // Business logic starts here
             // If logged in, log out first
             if ($this->identity->isAuthenticated()) {
@@ -66,7 +70,7 @@ class ApiSocialLoginModel extends GenericRestApiJsonModel
 
             $this->executeBusinessLogic();
             Assert::propertyExists($result, 'rest');
-            Assert::isInstanceOf($result->rest, \stdClass::class);  // …and `rest` is an object
+            Assert::isInstanceOf($result->rest, \stdClass::class); // and `rest` is an object
             $result->rest->message = $this->message;
             $result->httpCode = $this->httpCode;
             if ($this->httpCode === 200) {
@@ -127,30 +131,29 @@ class ApiSocialLoginModel extends GenericRestApiJsonModel
                 return;
         }
         $payload = $this->socialProvider->authTokenToPayload($authToken);
-        $this->processPayloadEmail($payload, $authToken, 'Login successful - ' . $provider);
+        $this->processPayloadEmail($payload, 'Login successful - ' . $provider);
     }
 
     /**
      * Arrange login based on $payload['email'] which should contain the user's email.
      *
      * @param array<mixed>|false|null $payload
-     * @param string $authToken Just for logging problems
      * @param string $okMessage
      * @return void
      */
-    private function processPayloadEmail($payload, string $authToken, string $okMessage): void
+    private function processPayloadEmail($payload, string $okMessage): void
     {
         $this->message = 'Internal login failed';
         $this->httpCode = 500;
-        if (is_null($payload)) {
-            Debugger::barDump($authToken, 'Invalid ID token');
-            Debugger::log('Invalid ID token: ' . $authToken, ILogger::ERROR);
+        if ($payload === null || $payload === false) {
+            Debugger::barDump('Invalid social login ID token');
+            Debugger::log('Invalid social login ID token.', ILogger::ERROR);
             $this->message = 'Invalid ID token';
             $this->httpCode = 403;
             return;
         } elseif (!isset($payload['email']) || empty($payload['email'])) {
-            Debugger::barDump($authToken, 'Missing email for token');
-            Debugger::log('Missing email for ID token: ' . $authToken, ILogger::ERROR);
+            Debugger::barDump('Missing email for social login ID token');
+            Debugger::log('Missing email for social login ID token.', ILogger::ERROR);
             $this->message = 'Missing email for ID token';
             $this->httpCode = 401;
             return;

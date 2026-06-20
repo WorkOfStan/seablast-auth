@@ -31,7 +31,7 @@ class AuthConstant
      */
     public const FLAG_USE_SOCIAL_LOGIN = 'AuthApp:FLAG_USE_SOCIAL_LOGIN';
     /**
-     * @var string string email address from which emails are sent
+     * @var string string: Display name for the default sender email address
      */
     public const FROM_MAIL_NAME = 'AuthApp:SB:FROM_MAIL:NAME';
     /**
@@ -43,19 +43,19 @@ class AuthConstant
      */
     public const SOCIAL_LOGIN_SUCCESS_URL = 'AuthApp:SOCIAL_LOGIN_SUCCESS_URL';
     /**
-     * @var string Subject of login email
+     * @var string string: Subject of login email
      */
     public const SUBJECT_EMAIL_LOGIN = 'AuthApp:SUBJECT_EMAIL_LOGIN';
     /**
-     * @var string Subject of registration email
+     * @var string string: Subject of registration email
      */
     public const SUBJECT_EMAIL_REGISTRATION = 'AuthApp:SUBJECT_EMAIL_REGISTRATION';
     /**
-     * @var string Text of login email (%URL% will be replace by the login URL)
+     * @var string string: Text of login email (%URL% will be replaced by the login URL)
      */
     public const TEXT_EMAIL_LOGIN = 'AuthApp:TEXT_EMAIL_LOGIN';
     /**
-     * @var string Text of registration email (%URL% will be replace by the activation URL)
+     * @var string string: Text of registration email (%URL% will be replaced by the activation URL)
      */
     public const TEXT_EMAIL_REGISTRATION = 'AuthApp:TEXT_EMAIL_REGISTRATION';
     /**

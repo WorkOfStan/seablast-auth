@@ -16,15 +16,15 @@ use Webmozart\Assert\Assert;
  * IdentityManager class manages user authentication and session handling.
  * Uses MySQLi for database access.
  *
- * Call setTablePrefix injection, if table prefix is used.
+ * Inject a table prefix with setTablePrefix() when the application uses prefixed auth tables.
  *
- * Sets 'sbRememberMe' cookie = Remember Me cookie = RM cookie
+ * Sets the 'sbRememberMe' cookie when Remember Me is enabled and the request is HTTPS.
  *
  * Note: Timestamps and Timezones: Ensure that your PHP and MySQL timezones are properly set,
  * as the code uses CURRENT_TIMESTAMP for time-related operations.
- * TODO: not just (string) type casting but also escapeSQL against SQL injection
+ * TODO: move mutable SQL statements to prepared statements.
  * TODO: test intervals and refactor code
- * TODO: Pdo as well as Mysqli
+ * TODO: PDO as well as MySQLi.
  */
 class IdentityManager implements IdentityManagerInterface
 {
@@ -34,12 +34,12 @@ class IdentityManager implements IdentityManagerInterface
     private $cookiePath = '';
     /** @var string User email. */
     private $email;
-    /** x@ var bool Authentication status. */
-    //private $isAuthenticated = false;
     /** @var ?bool Flag indicating if the user trying to authenticate is a new user. */
     private $isNewUser = null;
     /** @var \mysqli Database connection. */
     private $mysqli;
+    /** @var bool Flag indicating whether the Remember Me cookie can be created and read. */
+    private $rememberMeCookieEnabled = true;
     /** @var int Role ID of the user. */
     private $roleId;
     /** @var string Table prefix for SQL queries. */
@@ -67,7 +67,7 @@ class IdentityManager implements IdentityManagerInterface
     {
         // Validate existence of the user or create it
         // Select email From users and if nothing returned, then INSERT email INTO users
-        // (Note never loggedin users older than 15 minutes are destroyed) <- TODO
+        // TODO destroy never-logged-in users older than 15 minutes.
         // Validate email format. Throwing the generic InvalidArgumentException from Webmozart is acceptable
         // for now; tests can catch it specifically if desired.
         Assert::email($email);
@@ -81,8 +81,10 @@ class IdentityManager implements IdentityManagerInterface
         // Ensure static analyzers know we have a mysqli_result here
         Assert::isInstanceOf($result, \mysqli_result::class);
         if ($result->num_rows === 0) {
-            $this->mysqli->query("INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . $escapedEmail
-                . "', CURRENT_TIMESTAMP);"); // todo assert insert doesn't fail
+            $this->executeWriteQuery(
+                "INSERT INTO `{$this->tablePrefix}users` (email, created) VALUES ('" . $escapedEmail
+                . "', CURRENT_TIMESTAMP);"
+            );
             // Note: If the number is greater than maximal int value, mysqli_insert_id() will return a string.
             $this->userId = (int) $this->mysqli->insert_id;
             $this->isNewUser = true;
@@ -94,26 +96,37 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Creates a session ID and a remember-me token.
      *
-     * TODO consider insert also type (short session, long remember me) for selective purge
+     * TODO consider inserting token type (short session, long Remember Me) for selective purge.
      *
      * @param int $userId The user's ID.
      */
     private function createSessionId(int $userId): void
     {
-        // insert uniqid to the sessionId field and userId into userId field of the session_user table
-        $sessionId = uniqid('', true); // todo maybe also generateToken()???
-        $rememberMeToken = $this->generateToken();
-        $this->mysqli->query("INSERT INTO `{$this->tablePrefix}session_user` (user_id, token, updated) VALUES ("
-            . (int) $userId . ", '" . $sessionId . "', CURRENT_TIMESTAMP), (" . (int) $userId
-            . ", '" . $rememberMeToken . "', CURRENT_TIMESTAMP);");
-        // todo assert insert doesn't fail
+        // Insert a short-lived session token and, when enabled over HTTPS, a long-lived Remember Me token.
+        $sessionId = $this->generateToken();
+        $values = [
+            "(" . (int) $userId . ", '" . $this->mysqli->real_escape_string($sessionId) . "', CURRENT_TIMESTAMP)"
+        ];
+        $rememberMeToken = null;
+        $shouldCreateRememberMe = $this->rememberMeCookieEnabled && $this->isHttps($_SERVER);
+        if ($shouldCreateRememberMe) {
+            $rememberMeToken = $this->generateToken();
+            $values[] = "(" . (int) $userId . ", '" . $this->mysqli->real_escape_string($rememberMeToken)
+                . "', CURRENT_TIMESTAMP)";
+        }
+        $this->executeWriteQuery(
+            "INSERT INTO `{$this->tablePrefix}session_user` (user_id, token, updated) VALUES "
+            . implode(', ', $values) . ";"
+        );
         $_SESSION['sbSessionToken'] = $sessionId;
         // Create a long-lived relogin cookie which expires in 30 days (only for HTTPS)
-        if ($this->isHttps($_SERVER)) {
+        if ($rememberMeToken !== null) {
             $this->setCookie(
                 $rememberMeToken,
                 time() + 30 * 24 * 60 * 60 // expire time: days * hours * minutes * seconds
             );
+        } elseif (!$this->rememberMeCookieEnabled) {
+            Debugger::barDump('sbRememberMe cookie disabled');
         } else {
             Debugger::barDump('http => no sbRememberMe cookie');
         }
@@ -121,7 +134,10 @@ class IdentityManager implements IdentityManagerInterface
 
     private function deleteSessionToken(string $token): void
     {
-        $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '" . $token . "';");
+        $this->executeWriteQuery(
+            "DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
+            . $this->mysqli->real_escape_string($token) . "';"
+        );
     }
 
     /**
@@ -132,6 +148,9 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function doYouRememberMe(array $cookie): bool
     {
+        if (!$this->rememberMeCookieEnabled) {
+            return false;
+        }
         // Check if the "Remember Me" cookie exists
         if (!isset($cookie['sbRememberMe'])) {
             return false;
@@ -146,16 +165,30 @@ class IdentityManager implements IdentityManagerInterface
             return false;
         }
         // delete the old cookie id from session_user as new one will be set in createSessionId anyway
-        $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId
+        $this->executeWriteQuery("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId
             . " AND token = '" . $this->mysqli->real_escape_string($cookie['sbRememberMe']) . "';");
         $this->createSessionId($userId); // incidentally also updates the RM cookie
         return true;
     }
 
     /**
+     * Executes a write query and throws on database errors.
+     *
+     * @param string $query SQL query string.
+     * @return void
+     * @throws DbmsException on database statement error
+     */
+    private function executeWriteQuery(string $query): void
+    {
+        if ($this->mysqli->query($query) !== true) {
+            throw new DbmsException($this->mysqli->errno . ': ' . $this->mysqli->error);
+        }
+    }
+
+    /**
      * Fetches the first row of a query result.
      *
-     * TODO: add ORDER BY to queries, and as there's a LIMIT 1, get rid off this method, use queryStrict
+     * TODO add ORDER BY to queries, and as there is a LIMIT 1, replace this method with queryStrict.
      *
      * @param string $query SQL query string.
      * @return array<?scalar>|null Associative array of the row or null if no rows.
@@ -179,7 +212,7 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Generates a unique token for user sessions or actions.
      *
-     * TODO next phase - CSRF token method used
+     * TODO next phase - use a CSRF token method.
      *
      * @return string A hexadecimal token string.
      */
@@ -226,7 +259,7 @@ class IdentityManager implements IdentityManagerInterface
     public function getRoleId(): int
     {
         if (empty($this->roleId)) {
-            throw new UserException('You should first check the existence of User.'); // todo check it really here?
+            throw new UserException('You should first check the existence of User.'); // TODO check it really here?
         }
         return $this->roleId;
     }
@@ -271,8 +304,10 @@ class IdentityManager implements IdentityManagerInterface
         // Update last access
         // TODO prolongate session only if the previous access is older than 5 minutes to reduce SQL load
         Debugger::barDump($row, 'User for session'); // debug
-        $this->mysqli->query("UPDATE `{$this->tablePrefix}session_user` SET updated = CURRENT_TIMESTAMP WHERE token = '"
-            . $sessionTokenEscaped . "';");
+        $this->executeWriteQuery(
+            "UPDATE `{$this->tablePrefix}session_user` SET updated = CURRENT_TIMESTAMP WHERE token = '"
+            . $sessionTokenEscaped . "';"
+        );
         return (int) $row['user_id'];
     }
 
@@ -289,7 +324,7 @@ class IdentityManager implements IdentityManagerInterface
         $userId = is_string($sessionId) ? $this->getUserForSessionId($sessionId) : null;
 
         if ($userId === null) {
-            // todo doYouRememberMe?
+            // TODO doYouRememberMe?
             return false;
         }
 
@@ -361,18 +396,23 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function isTokenValid(string $emailToken): bool
     {
+        $emailTokenEscaped = $this->mysqli->real_escape_string($emailToken);
         $row = $this->fetchFirstRow(
-            "SELECT id, email FROM `{$this->tablePrefix}email_token` WHERE token = '" . $emailToken
+            "SELECT id, email FROM `{$this->tablePrefix}email_token` WHERE token = '" . $emailTokenEscaped
             . "' AND created > (NOW() - INTERVAL 15 MINUTE) LIMIT 1;"
         );
         if (is_null($row)) {
             return false;
         }
         // Token is one time only
-        $this->mysqli->query("DELETE FROM `{$this->tablePrefix}email_token` WHERE id = " . (int) $row['id'] . ";");
+        $this->executeWriteQuery(
+            "DELETE FROM `{$this->tablePrefix}email_token` WHERE id = " . (int) $row['id'] . ";"
+        );
          // Update last_access
-        $this->mysqli->query("UPDATE `{$this->tablePrefix}users` SET last_login = CURRENT_TIMESTAMP WHERE email = '"
-            . (string) $row['email'] . "';");
+        $this->executeWriteQuery(
+            "UPDATE `{$this->tablePrefix}users` SET last_login = CURRENT_TIMESTAMP WHERE email = '"
+            . $this->mysqli->real_escape_string((string) $row['email']) . "';"
+        );
 
         $this->populateUserByEmail((string) $row['email']);
         return true;
@@ -381,7 +421,7 @@ class IdentityManager implements IdentityManagerInterface
     /**
      * Logic for the user login. Validate email and return a token to be sent by email.
      *
-     * TODO allow inserting the token to an HTML input field.
+     * TODO allow inserting the token into an HTML input field.
      *
      * @param string $email
      * @return string
@@ -391,9 +431,9 @@ class IdentityManager implements IdentityManagerInterface
         $this->checkEmailOrCreateUser($email);
         $token = $this->generateToken();
         // Generate and store a token for this email
-        $this->mysqli->query("INSERT INTO `{$this->tablePrefix}email_token` (email, token, created) VALUES ('"
-            . (string) $email . "', '" . (string) $token . "', CURRENT_TIMESTAMP);");
-        // todo assert insert doesn't fail
+        $this->executeWriteQuery("INSERT INTO `{$this->tablePrefix}email_token` (email, token, created) VALUES ('"
+            . $this->mysqli->real_escape_string($email) . "', '" . $this->mysqli->real_escape_string($token)
+            . "', CURRENT_TIMESTAMP);");
         return $token;
     }
 
@@ -421,21 +461,18 @@ class IdentityManager implements IdentityManagerInterface
     public function logout(): void
     {
         Assert::string($_SESSION['sbSessionToken']);
-     //   $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
-       //     . $_SESSION['sbSessionToken'] . "';");
+        // Delete through the helper so escaping and DB error handling stay consistent.
         $this->deleteSessionToken($_SESSION['sbSessionToken']);
         unset($_SESSION['sbSessionToken']);
-        // todo remove csrf tokens from this browser context
+        // TODO remove csrf tokens from this browser context.
         // Remove "Remember Me" cookie if it exists both from database and from cookies
         if (isset($_COOKIE['sbRememberMe'])) {
             Assert::string($_COOKIE['sbRememberMe']);
-        //    $this->mysqli->query("DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
-        //        . (string) $_COOKIE['sbRememberMe'] . "';");
-                    $this->deleteSessionToken($_COOKIE['sbRememberMe']);
+            // Delete the Remember Me token through the same path as the short session token.
+            $this->deleteSessionToken($_COOKIE['sbRememberMe']);
             $this->setCookie('', time() - 3600);
         }
-        //$this->isAuthenticated = false;
-        //todo make sure that seablast knows, i.e. invalidate SB_ROLE_ID and USER_ID
+        // TODO make sure that Seablast knows, i.e. invalidate SB_ROLE_ID and USER_ID.
     }
 
     /**
@@ -450,7 +487,7 @@ class IdentityManager implements IdentityManagerInterface
     private function populateUserByEmail(string $email): void
     {
         $row = $this->fetchFirstRow("SELECT id, role_id FROM `{$this->tablePrefix}users` WHERE email = '"
-            . (string) $email . "' LIMIT 1;");
+            . $this->mysqli->real_escape_string($email) . "' LIMIT 1;");
         if (is_null($row)) {
             throw new UserException('An existing user expected.');
         }
@@ -524,6 +561,19 @@ class IdentityManager implements IdentityManagerInterface
     {
         $this->cookiePath = $cookiePath;
         Debugger::barDump($this->cookiePath, 'Injected cookie path to IdentityManager');
+    }
+
+    /**
+     * Remember Me cookie feature flag injection.
+     *
+     * Defaults to true for backwards compatibility with direct IdentityManager users.
+     *
+     * @param bool $enabled
+     * @return void
+     */
+    public function setRememberMeCookieEnabled(bool $enabled): void
+    {
+        $this->rememberMeCookieEnabled = $enabled;
     }
 
     /**

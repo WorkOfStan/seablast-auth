@@ -55,10 +55,13 @@ class UserModel implements SeablastModelInterface
         $this->user->setCookiePath(
             $this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH)
         );
+        $this->user->setRememberMeCookieEnabled(
+            $this->configuration->flag->status(AuthConstant::FLAG_REMEMBER_ME_COOKIE)
+        );
     }
 
     /**
-     * Different reaction to different authentization state
+     * Different response for the current authentication state.
      * @return stdClass
      * @throw \Exception if unimplemented HTTP method call
      */
@@ -69,7 +72,7 @@ class UserModel implements SeablastModelInterface
                 $this->user->logout();
                 return (object) [
                         'redirectionUrl' => $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
-                        . $this->userRoute, // Todo go home instead?
+                        . $this->userRoute, // TODO go home instead?
                 ];
             }
             return (object) [
@@ -91,7 +94,7 @@ class UserModel implements SeablastModelInterface
                     //    . ' <a href="../content-root">Moje kroniky</a>', // HTML is displayed escaped
                     //];
                     // ... so refresh the page ;-)
-                    // todo go to the original target insted of /user
+                    // TODO go to the original target instead of /user
                     return (object) [
                             'redirectionUrl' =>
                             $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
@@ -122,7 +125,7 @@ class UserModel implements SeablastModelInterface
                         $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL) . $this->userRoute,
                 ];
             }
-            // první přístup
+            // First visit
             return (object) [
                     'showLogin' => true,
                     'showLogout' => false,
@@ -186,7 +189,7 @@ class UserModel implements SeablastModelInterface
     private function sendLoginEmail(string $emailAddress, string $token): void
     {
         $loginUrl = $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
-            . $this->userRoute . '/?token=' . $token; // TODO session should keep the original target URL - deep loging
+            . $this->userRoute . '/?token=' . $token; // TODO session should keep the original target URL - deep login
         Debugger::barDump($loginUrl, $this->user->isNewUser() ? 'registerUrl' : 'loginUrl');
         $plainText = str_replace(
             '%URL%',
@@ -204,7 +207,7 @@ class UserModel implements SeablastModelInterface
         $subject = $this->configuration->getString(
             $this->user->isNewUser() ? AuthConstant::SUBJECT_EMAIL_REGISTRATION : AuthConstant::SUBJECT_EMAIL_LOGIN
         );
-        // Volitelně připrav HTML variantu (zachováš čisté plaintext i pro klienty bez HTML)
+        // Optionally prepare an HTML variant while keeping clean plaintext for clients without HTML.
         //        $htmlBody = sprintf(
         //            '<p>%s</p>',
         //            htmlspecialchars(str_replace("\n", ' ', $plainText), ENT_QUOTES, 'UTF-8')

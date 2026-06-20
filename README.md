@@ -3,10 +3,10 @@
 A no-password authentication and authorization extension for [Seablast for PHP](https://github.com/WorkOfStan/seablast) apps.
 This extension facilitates secure user verification and efficient access control.
 
-Optionally, Seablast Auth has a ligthweight integration with Google and Facebook to support social authentication, allowing seamless sign-in through various social media platforms.
+Optionally, Seablast Auth has a lightweight integration with Google and Facebook to support social authentication, allowing seamless sign-in through various social media platforms.
 Integrable via Composer, it activates only when required, equipping your app with essential security features effortlessly.
 If your Seablast-based application necessitates user authentication or resource authorization, incorporating Seablast Auth will equip it with these capabilities instantly.
-(For applications that do not require these features, Seablast Auth can simple be not included to maintain a lighter application footprint.)
+(For applications that do not require these features, Seablast Auth can simply be omitted to maintain a lighter application footprint.)
 
 ## User management
 
@@ -23,7 +23,7 @@ When just getting the identity of a logged-in user is needed:
     $identity = new IdentityManager($this->configuration->mysqli());
     // If prefix is used, inject it
     $identity->setTablePrefix($this->configuration->dbmsTablePrefix());
-    // To make Remember me Cookies predictable = avoid conflicts, inject a cookie path
+    // To make Remember Me cookies predictable and thus avoid conflicts, inject a cookie path
     $identity->setCookiePath($this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH));
 ```
 
@@ -63,8 +63,8 @@ session_set_cookie_params(
 ): bool
 ```
 
-Note: sbRememberMe cookie created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
-(todo check whether if not allowed, it is really not created or just not read)
+Note: `sbRememberMe` cookie is created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
+Bundled models inject the flag into `IdentityManager`; direct `IdentityManager` users can call `setRememberMeCookieEnabled(false)`.
 
 ### Routing
 
@@ -83,13 +83,13 @@ but if you want to customize it, configure path to your own template within your
         )
 ```
 
-The successful login behaviour is reload the current page or go to a social login success page:
+Successful login either reloads the current page or goes to a social login success page:
 
 ```php
         ->setString(AuthConstant::SOCIAL_LOGIN_SUCCESS_URL, '') // empty OR not set => just reload; otherwise go to the fully qualified URL of a social login success page
 ```
 
-Note 1: already Seablast::v0.2.5 is using the default settings in the [conf/app.conf.php](conf/app.conf.php), so Seablast Auth configuration is used with v0.2.5 forward.
+Note 1: Seablast::v0.2.5 and newer use the default settings in the [conf/app.conf.php](conf/app.conf.php), so Seablast Auth configuration is loaded automatically.
 
 `send-auth-token.js` (since Seablast::v0.2.10) expects the route `/api/social-login` as configured in [app.conf.php](conf/app.conf.php) and provider either `facebook` or `google`.
 
@@ -111,13 +111,13 @@ Note 2: vendor/seablast is accessible for Seablast apps, so the web browser asse
 
 ### Social login
 
-Existence of configuration strings `FACEBOOK_APP_ID` or `GOOGLE_CLIENT_ID` imply option to login by these platforms respectively.
+The presence of configuration strings `FACEBOOK_APP_ID` or `GOOGLE_CLIENT_ID` enables login by these platforms respectively.
 
 Note 1: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
 
 Note 2: send-auth-token.js is expected in seablast directory, which needs at least Seablast v0.2.10. (These arguments `window.sendAuthToken(token, apiRoute, errorLogger);` are processed since Seablast::v0.2.13.)
 
-Note 3: The new Google Identity Services no longer opens a traditional pop‑up account chooser; instead, it displays the One Tap UI.
+Note 3: The new Google Identity Services no longer opens a traditional pop-up account chooser; instead, it displays the One Tap UI.
 
 ### MailOut::send() method is a generic mail sender built on top of Symfony Mailer
 
@@ -126,12 +126,14 @@ In order to send emails, the `SeablastConstant::USER_MAIL_ENABLED` flag MUST be 
 ```php
   // Usage:
   use Seablast\Auth\MailOut;
-  $sendMail = new MailOut('smtp://smtp.example.com:587', 'noreply@example.com');
+
+  /** @var \Seablast\Seablast\SeablastConfiguration $seablastConfiguration */
+  $sendMail = new MailOut($seablastConfiguration);
   $sendMail->send(
-    to: 'user@example.com',
-    subject: 'Login link',
-    textBody: "Open this URL: https://app.example.com/?token=XYZ",
-    options: [
+    'user@example.com', // to
+    'Login link', // subject
+    "Open this URL: https://app.example.com/?token=XYZ", // textBody
+    [
       'cc'   => ['cc1@example.com', 'cc2@example.com'], // optional
       'bcc'  => 'audit@example.com',                    // optional, can be string or array
       'html' => '<p>Open this URL: <a href="https://app.example.com/?token=XYZ">Login</a></p>', // optional
@@ -144,10 +146,10 @@ In order to send emails, the `SeablastConstant::USER_MAIL_ENABLED` flag MUST be 
 
 ## Testing
 
-Run [./test.sh](./test.sh) for essential PHPUnit tests:
+Run `.\vendor\bin\phpunit` on Windows for essential PHPUnit tests. From Git Bash, [./test.sh](./test.sh) also prepares the testing database migration before running PHPUnit.
 
 - create token and use it,
-- check its disapperance as it's valid only once,
+- check its disappearance as it's valid only once,
 - an invalid email format is not accepted,
 - SQL injection attempts is not accepted.
 

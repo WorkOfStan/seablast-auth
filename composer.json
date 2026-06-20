@@ -1,6 +1,6 @@
 {
   "name": "seablast/auth",
-  "description": "No-password authentication and authorisation library for Seablast for PHP",
+  "description": "No-password authentication and authorization library for Seablast for PHP",
   "type": "library",
   "require": {
     "php": ">=7.2 <8.6",

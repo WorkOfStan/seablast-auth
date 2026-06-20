@@ -51,7 +51,7 @@ class GroupManager
      * following responses:
      *  - wrong token / already activated / new activation
      *
-     * TODO: the $token comparison is case-insensitive. Make it explicit.
+     * Token comparison is intentionally case-insensitive.
      *
      * @param string $token
      * @return int self::ACTIVATION constant mimicking the HTTP response codes

@@ -307,6 +307,11 @@ class IdentityManager implements IdentityManagerInterface
         if (is_null($row)) {
             return null;
         }
+        $userId = (int) $row['user_id'];
+        $setQueryLogUser = [$this->mysqli, 'setUser'];
+        if (is_callable($setQueryLogUser)) {
+            call_user_func($setQueryLogUser, $userId);
+        }
         // Update last access when the saved timestamp is stale enough.
         Debugger::barDump($row, 'User for session'); // debug
         $fiveMinutesAgo = date('Y-m-d H:i:s', time() - 300);
@@ -318,7 +323,7 @@ class IdentityManager implements IdentityManagerInterface
         } else {
             Debugger::barDump('No session update as younger than 5 minutes');
         }
-        return (int) $row['user_id'];
+        return $userId;
     }
 
     /**

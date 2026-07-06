@@ -40,13 +40,14 @@ feat: use cryptographically secure random bytes for session tokens
 
 ### Fixed
 
-- Escaped email and token values in IdentityManager login, token validation, session deletion, and user lookup paths.
+- Escape email and token values in IdentityManager login, token validation, session deletion, and user lookup paths.
 - Write queries in IdentityManager now throw `DbmsException` on database errors.
 - `AuthConstant::FLAG_REMEMBER_ME_COOKIE` now controls Remember Me cookie creation as well as reading in bundled models.
 - Google tokeninfo validation now handles missing or malformed `aud`, `iss`, `email`, and `exp` fields safely.
 - Group activation token lookup is explicitly case-insensitive and limited to one matching token.
 - Readme `MailOut` usage now matches the `MailOut(SeablastConfiguration $configuration)` constructor.
-- Removes never-logged-in users older than 15 minutes before creating or reusing login users.
+- Remove never-logged-in users older than 15 minutes before creating or reusing login users.
+- Set the query-log user immediately after resolving `user_id`, before refreshing `session_user.updated`
 
 ### Security
 

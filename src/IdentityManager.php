@@ -65,19 +65,20 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function checkEmailOrCreateUser(string $email): void
     {
+        // Validate email format. Throwing the generic InvalidArgumentException from Webmozart is acceptable
+        // for now; tests can catch it specifically if desired.
+        Assert::email($email);
+        $escapedEmail = $this->mysqli->real_escape_string($email);
         // remove never-logged-in users older than 15 minutes (could be triggered by cron instead)
         $this->executeWriteQuery(
             "DELETE u FROM `{$this->tablePrefix}users` AS u WHERE u.last_login IS NULL"
+            . " AND u.email <> '" . $escapedEmail . "'"
             . " AND u.created < (CURRENT_TIMESTAMP - INTERVAL 15 MINUTE)"
             . " AND NOT EXISTS (SELECT 1 FROM `{$this->tablePrefix}session_user` AS su"
             . " WHERE su.user_id = u.id LIMIT 1);"
         );
         // Validate existence of the user or create it
         // Select email From users and if nothing returned, then INSERT email INTO users
-        // Validate email format. Throwing the generic InvalidArgumentException from Webmozart is acceptable
-        // for now; tests can catch it specifically if desired.
-        Assert::email($email);
-        $escapedEmail = $this->mysqli->real_escape_string($email);
         $query = "SELECT email FROM `{$this->tablePrefix}users` WHERE email = '" . $escapedEmail
             . "' LIMIT 1;";
         $result = $this->mysqli->query($query);
@@ -464,6 +465,10 @@ class IdentityManager implements IdentityManagerInterface
     public function loginWithTrustedEmail(string $email): void
     {
         $this->checkEmailOrCreateUser($email);
+        $this->executeWriteQuery(
+            "UPDATE `{$this->tablePrefix}users` SET last_login = CURRENT_TIMESTAMP WHERE email = '"
+            . $this->mysqli->real_escape_string($email) . "';"
+        );
         $this->populateUserByEmail($email);
     }
 

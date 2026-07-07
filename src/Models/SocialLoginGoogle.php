@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Seablast\Auth\Models;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use Seablast\Auth\AuthConstant;
 use Seablast\Seablast\SeablastConfiguration;
 use Tracy\Debugger;
-use Webmozart\Assert\Assert;
+use Tracy\ILogger;
 
 /**
  * API receives social token and retrieves email.
@@ -24,13 +25,17 @@ class SocialLoginGoogle
 
     /** @var SeablastConfiguration */
     protected $configuration;
+    /** @var ClientInterface */
+    private $client;
 
     /**
      * @param SeablastConfiguration $configuration
+     * @param ClientInterface|null $client
      */
-    public function __construct(SeablastConfiguration $configuration)
+    public function __construct(SeablastConfiguration $configuration, ?ClientInterface $client = null)
     {
         $this->configuration = $configuration;
+        $this->client = $client ?: new Client();
     }
 
     /**
@@ -42,7 +47,7 @@ class SocialLoginGoogle
      * which is located in the https://github.com/googleapis/google-api-php-client repository.
      *
      * @param string $idToken
-     * @return array<string>|false
+     * @return array<string,string>|false
      */
     public function authTokenToPayload(string $idToken)
     {
@@ -53,37 +58,90 @@ class SocialLoginGoogle
         if (!$this->configuration->exists(AuthConstant::GOOGLE_CLIENT_ID)) {
             return false;
         }
-        $client = new Client();
-        $response = $client->get('https://oauth2.googleapis.com/tokeninfo', [
-            'query' => ['id_token' => $idToken]
-        ]);
+        try {
+            $response = $this->client->request('GET', 'https://oauth2.googleapis.com/tokeninfo', [
+                'http_errors' => false,
+                'query' => ['id_token' => $idToken]
+            ]);
+        } catch (\Exception $e) {
+            Debugger::log('Google tokeninfo request failed: ' . get_class($e), ILogger::ERROR);
+            return false;
+        }
 
         if ($response->getStatusCode() === 200) {
-            $data = json_decode($response->getBody()->getContents(), true);
+            $body = $response->getBody()->getContents();
+            $data = $this->normalizePayload(json_decode($body, true));
             // Response conforms to https://github.com/firebase/php-jwt
-            // Validate the audience, issuer, etc.
-            // TODO check also $data['exp']
-            if ($data === false || !is_array($data)) {
-                Debugger::barDump($response->getBody()->getContents(), "Unexpected API response");
-            } elseif (
-                $data['aud'] === $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID) &&
-                $data['iss'] === 'https://accounts.google.com'
-            ) {
-                //echo "Token is valid. User information:";
-                Assert::allString($data);
+            // Validate the audience, issuer, email, and expiration if present.
+            if (is_null($data)) {
+                Debugger::barDump(json_last_error_msg(), "Unexpected Google tokeninfo response");
+            } elseif ($this->isValidPayload($data)) {
                 return $data;
             } else {
-                Debugger::barDump($data, 'Token is invalid or audience does not match.');
+                Debugger::barDump(
+                    [
+                        'audienceMatches' => isset($data['aud'])
+                            && $data['aud'] === $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID),
+                        'issuer' => $data['iss'] ?? null,
+                        'hasEmail' => !empty($data['email']),
+                        'hasExpiration' => isset($data['exp'])
+                    ],
+                    'Google tokeninfo payload did not pass validation.'
+                );
             }
         } else {
             Debugger::barDump(
                 [
-                    'idToken' => $idToken,
+                    'statusCode' => $response->getStatusCode(),
                     'GOOGLE_CLIENT_ID' => $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID)
                 ],
-                'Failed to validate token.'
+                'Google tokeninfo request failed.'
             );
         }
         return false;
+    }
+
+    /**
+     * Validate required Google tokeninfo payload fields.
+     *
+     * @param array<string,string> $data
+     * @return bool
+     */
+    private function isValidPayload(array $data): bool
+    {
+        if (
+            !isset($data['aud'], $data['iss'], $data['email']) ||
+            $data['aud'] !== $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID) ||
+            !in_array($data['iss'], ['https://accounts.google.com', 'accounts.google.com'], true) ||
+            filter_var($data['email'], FILTER_VALIDATE_EMAIL) === false
+        ) {
+            return false;
+        }
+        if (!isset($data['exp'])) {
+            return true;
+        }
+        // exp is in seconds since epoch.
+        return is_numeric($data['exp']) && (int) $data['exp'] > time();
+    }
+
+    /**
+     * Normalize tokeninfo JSON into a flat string array.
+     *
+     * @param mixed $data
+     * @return array<string,string>|null
+     */
+    private function normalizePayload($data): ?array
+    {
+        if (!is_array($data)) {
+            return null;
+        }
+        $output = [];
+        foreach ($data as $key => $value) {
+            if (!is_string($key) || !is_scalar($value)) {
+                return null;
+            }
+            $output[$key] = (string) $value;
+        }
+        return $output;
     }
 }

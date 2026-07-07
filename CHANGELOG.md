@@ -19,6 +19,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+## [0.1.9] - 2026-07-07
+
+feat: use cryptographically secure random bytes for session tokens
+
+### Added
+
+- `AGENTS.md` with project, command, testing, and security guidance for coding agents.
+- `IdentityManager::setRememberMeCookieEnabled()` to let bundled models and direct users disable Remember Me cookie creation and reads.
+- PHPUnit coverage for Google social-login tokeninfo validation without network or database access.
+
+### Changed
+
+- Updated readme and Composer description wording for current APIs and PHP support.
+- Updated `blast.sh` from Seablast v0.2.11 to v0.2.17.3 helper wording and conditional PHPStan PHPUnit plugin installation.
+- Adjusted GitHub workflow permissions comments for pull-request comments.
+- Replaced session `uniqid()` values with random tokens from the existing token generator.
+- `SocialLoginGoogle` accepts an optional Guzzle client for isolated testing.
+- Update session access timestamp writes to run only after five minutes of inactivity.
+
+### Fixed
+
+- Escape email and token values in IdentityManager login, token validation, session deletion, and user lookup paths.
+- Write queries in IdentityManager now throw `DbmsException` on database errors.
+- `AuthConstant::FLAG_REMEMBER_ME_COOKIE` now controls Remember Me cookie creation as well as reading in bundled models.
+- Google tokeninfo validation now handles missing or malformed `aud`, `iss`, `email`, and `exp` fields safely.
+- Group activation token lookup is explicitly case-insensitive and limited to one matching token.
+- Readme `MailOut` usage now matches the `MailOut(SeablastConfiguration $configuration)` constructor.
+- Remove never-logged-in users older than 15 minutes before creating or reusing login users.
+- Set the query-log user immediately after resolving `user_id`, before refreshing `session_user.updated`
+
+### Security
+
+- Make logout to use deleteSessionToken method
+- Social-login failure logging no longer records raw OAuth or ID tokens.
+- Session tokens now use cryptographically secure random bytes instead of `uniqid()`.
+- Google social-login validation checks audience, issuer, email format, and expiration when present.
+
 ## [0.1.8] - 2025-12-27
 
 feat: add PHP/8.5 support
@@ -132,7 +169,8 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.5...v0.1.6

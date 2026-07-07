@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed` for any bugfixes
 
+- Mark trusted-email logins with `last_login` so social-login users are not pruned as never logged in.
+
 ### `Security` in case of vulnerabilities
 
 ## [0.1.9] - 2026-07-07

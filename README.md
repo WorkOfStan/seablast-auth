@@ -159,3 +159,4 @@ Run `.\vendor\bin\phpunit` on Windows for essential PHPUnit tests. From Git Bash
 
 - 251227, success email token login/logout page
 - 251227, define also (social login) logout page
+- 260707, before this update, social login didn't set users.last_login , so these accounts were protected before deletion by "remove never-logged-in users older than 15 minute" because the session_user is not pruned, yet. Sometimes after this update, start to carefully prune also the session_user table.

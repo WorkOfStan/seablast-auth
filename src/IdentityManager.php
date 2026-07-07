@@ -308,6 +308,7 @@ class IdentityManager implements IdentityManagerInterface
             return null;
         }
         $userId = (int) $row['user_id'];
+        // Set the query-log user immediately after resolving `user_id`, before refreshing `session_user.updated`
         $setQueryLogUser = [$this->mysqli, 'setUser'];
         if (is_callable($setQueryLogUser)) {
             call_user_func($setQueryLogUser, $userId);

@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
-## [0.1.9] - Unreleased
+## [0.1.9] - 2026-07-07
 
 feat: use cryptographically secure random bytes for session tokens
 

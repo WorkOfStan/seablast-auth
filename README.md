@@ -8,6 +8,8 @@ Integrable via Composer, it activates only when required, equipping your app wit
 If your Seablast-based application necessitates user authentication or resource authorization, incorporating Seablast Auth will equip it with these capabilities instantly.
 (For applications that do not require these features, Seablast Auth can simply be omitted to maintain a lighter application footprint.)
 
+Note: Ensure that your PHP and MySQL timezones are properly set, as the code uses CURRENT_TIMESTAMP for time-related operations. (It would be possible to use purely SQL statements with `INTERVAL` but at a cost of not caching the SQL responses.)
+
 ## User management
 
 - RBAC (Role-Based Access Control) supported

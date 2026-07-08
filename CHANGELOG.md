@@ -17,9 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed` for any bugfixes
 
-- Mark trusted-email logins with `last_login` so social-login users are not pruned as never logged in.
-
 ### `Security` in case of vulnerabilities
+
+## [0.1.10] - 2026-07-08
+
+fix: mark social-logins with `last_login`
+
+### Removed
+
+- Remove the `.htaccess` directory-listing protection (`Options -Indexes`); host projects should configure this themselves.
+
+### Fixed
+
+- Mark trusted-email logins with `last_login` so social-login users are not pruned as never logged in.
 
 ## [0.1.9] - 2026-07-07
 
@@ -171,7 +181,8 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.9...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...HEAD
+[0.1.10]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.6...v0.1.7

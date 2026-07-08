@@ -4,7 +4,7 @@
 .phpunit.result.cache
 
 #disable private local files
-*.local.php
+*.local.*
 
 #disable composer-managed libraries
 /vendor/

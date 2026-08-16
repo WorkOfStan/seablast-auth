@@ -120,17 +120,17 @@ The bundled logout form has the `seablast-auth-logout-link` class. It remains a 
 
 ```css
 form.seablast-auth-logout-link {
-    display: inline;
+  display: inline;
 }
 
 form.seablast-auth-logout-link input[type="submit"] {
-    padding: 0;
-    border: 0;
-    background: none;
-    color: inherit;
-    font: inherit;
-    text-decoration: underline;
-    cursor: pointer;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 ```
 

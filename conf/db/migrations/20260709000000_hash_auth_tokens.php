@@ -15,8 +15,10 @@ final class HashAuthTokens extends AbstractMigration
         if (!is_string($tablePrefix)) {
             throw new \RuntimeException('Table prefix MUST be a string.');
         }
-        $this->execute("UPDATE `" . $tablePrefix . "email_token` SET token = SHA2(token, 256) WHERE token NOT REGEXP '^[0-9a-f]{64}$'");
-        $this->execute("UPDATE `" . $tablePrefix . "session_user` SET token = SHA2(token, 256) WHERE token NOT REGEXP '^[0-9a-f]{64}$'");
+        $this->execute("UPDATE `" . $tablePrefix . "email_token` SET token = SHA2(token, 256)"
+        . " WHERE token NOT REGEXP '^[0-9a-f]{64}$'");
+        $this->execute("UPDATE `" . $tablePrefix . "session_user` SET token = SHA2(token, 256)"
+        . " WHERE token NOT REGEXP '^[0-9a-f]{64}$'");
         $this->addUniqueTokenIndex('email_token', 'idx_email_token_token_unique');
         $this->addUniqueTokenIndex('session_user', 'idx_session_user_token_unique');
     }

@@ -53,8 +53,14 @@ final class HashAuthTokens extends AbstractMigration
     private function tableNameWithConfiguredAffixes(string $tableName): string
     {
         $adapter = $this->getAdapter();
-        $prefix = $adapter->hasOption('table_prefix') ? (string) $adapter->getOption('table_prefix') : '';
-        $suffix = $adapter->hasOption('table_suffix') ? (string) $adapter->getOption('table_suffix') : '';
+        if ($adapter === null) {
+            throw new \LogicException('A database adapter is required to resolve table affixes.');
+        }
+        $prefix = $adapter->hasOption('table_prefix') ? $adapter->getOption('table_prefix') : '';
+        $suffix = $adapter->hasOption('table_suffix') ? $adapter->getOption('table_suffix') : '';
+        if (!is_string($prefix) || !is_string($suffix)) {
+            throw new \UnexpectedValueException('Database table prefix and suffix must be strings.');
+        }
         return $prefix . $tableName . $suffix;
     }
 }

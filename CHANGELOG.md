@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed` for any bugfixes
 
+- Validate migration table-affix and Facebook app ID value types before string use.
+
 ### `Security` in case of vulnerabilities
 
 - Remove debug output that exposed email login URLs and plaintext login email bodies.

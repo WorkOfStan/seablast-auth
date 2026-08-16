@@ -169,10 +169,12 @@ class SocialLoginFacebook
         }
 
         $data = $payload['data'];
+        $appId = $data['app_id'] ?? null;
         if (
-            !isset($data['is_valid'], $data['app_id']) ||
+            !isset($data['is_valid']) ||
             $data['is_valid'] !== true ||
-            (string) $data['app_id'] !== $this->configuration->getString(AuthConstant::FACEBOOK_APP_ID)
+            (!is_string($appId) && !is_int($appId)) ||
+            (string) $appId !== $this->configuration->getString(AuthConstant::FACEBOOK_APP_ID)
         ) {
             return false;
         }

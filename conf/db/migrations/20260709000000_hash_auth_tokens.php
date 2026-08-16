@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Phinx\Migration\AbstractMigration;
+use Phinx\Db\Adapter\AdapterInterface;
+use Phinx\Migration\IrreversibleMigrationException;
 
 final class HashAuthTokens extends AbstractMigration
 {
@@ -10,6 +12,9 @@ final class HashAuthTokens extends AbstractMigration
     {
         $options = $this->getAdapterOptions();
         $tablePrefix = $options['table_prefix'] ?? '';
+        if(!is_string($tablePrefix)) {
+            throw new \RuntimeException('Table prefix MUST be a string.');
+        }
         $this->execute("UPDATE `" . $tablePrefix . "email_token` SET token = SHA2(token, 256) WHERE token NOT REGEXP '^[0-9a-f]{64}$'");
         $this->execute("UPDATE `" . $tablePrefix . "session_user` SET token = SHA2(token, 256) WHERE token NOT REGEXP '^[0-9a-f]{64}$'");
         $this->addUniqueTokenIndex('email_token', 'idx_email_token_token_unique');
@@ -20,7 +25,9 @@ final class HashAuthTokens extends AbstractMigration
     {
         $this->removeUniqueTokenIndex('email_token', 'idx_email_token_token_unique');
         $this->removeUniqueTokenIndex('session_user', 'idx_session_user_token_unique');
-        // Token hashes cannot be reversed to plaintext bearer tokens.
+        throw new IrreversibleMigrationException(
+            'Token hashes cannot be reversed to plaintext bearer tokens.'
+        );
     }
 
     private function addUniqueTokenIndex(string $tableName, string $indexName): void

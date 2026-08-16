@@ -12,7 +12,7 @@ final class HashAuthTokens extends AbstractMigration
     {
         $options = $this->getAdapterOptions();
         $tablePrefix = $options['table_prefix'] ?? '';
-        if(!is_string($tablePrefix)) {
+        if (!is_string($tablePrefix)) {
             throw new \RuntimeException('Table prefix MUST be a string.');
         }
         $this->execute("UPDATE `" . $tablePrefix . "email_token` SET token = SHA2(token, 256) WHERE token NOT REGEXP '^[0-9a-f]{64}$'");

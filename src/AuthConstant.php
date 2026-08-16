@@ -15,6 +15,10 @@ class AuthConstant
      */
     public const FACEBOOK_APP_ID = 'AuthApp:FACEBOOK_APP_ID';
     /**
+     * @var string Facebook App Secret
+     */
+    public const FACEBOOK_APP_SECRET = 'AuthApp:FACEBOOK_APP_SECRET';
+    /**
      * @var string Facebook API version
      */
     public const FACEBOOK_API_VERSION = 'AuthApp:FACEBOOK_API_VERSION';

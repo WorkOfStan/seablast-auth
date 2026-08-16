@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+- Remove debug output that exposed email login URLs and plaintext login email bodies.
+- Store email, session, and Remember Me tokens as SHA-256 hashes in the database.
+- Require POST with a valid CSRF token for logout.
+- Add `SameSite=Lax` to the Remember Me cookie.
+- Validate database table prefixes before interpolating them into auth SQL identifiers.
+- Validate Facebook access tokens with `debug_token` before trusting Facebook email payloads.
+- Avoid logging social-login exception messages that can include token-bearing request URLs.
+- Require Google tokeninfo payloads to include expiration and verified-email fields.
+- Add unique database indexes for auth token columns and migrate existing token rows to hashes.
+- Throttle repeated login email requests for the same address.
+
 ## [0.1.10] - 2026-07-08
 
 fix: mark social-logins with `last_login`

@@ -84,7 +84,8 @@ class SocialLoginGoogle
                             && $data['aud'] === $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID),
                         'issuer' => $data['iss'] ?? null,
                         'hasEmail' => !empty($data['email']),
-                        'hasExpiration' => isset($data['exp'])
+                        'hasExpiration' => isset($data['exp']),
+                        'emailVerified' => $data['email_verified'] ?? null
                     ],
                     'Google tokeninfo payload did not pass validation.'
                 );
@@ -113,12 +114,14 @@ class SocialLoginGoogle
             !isset($data['aud'], $data['iss'], $data['email']) ||
             $data['aud'] !== $this->configuration->getString(AuthConstant::GOOGLE_CLIENT_ID) ||
             !in_array($data['iss'], ['https://accounts.google.com', 'accounts.google.com'], true) ||
-            filter_var($data['email'], FILTER_VALIDATE_EMAIL) === false
+            filter_var($data['email'], FILTER_VALIDATE_EMAIL) === false ||
+            !isset($data['exp'], $data['email_verified'])
         ) {
             return false;
         }
-        if (!isset($data['exp'])) {
-            return true;
+        $emailVerified = strtolower($data['email_verified']);
+        if (!in_array($emailVerified, ['true', '1'], true)) {
+            return false;
         }
         // exp is in seconds since epoch.
         return is_numeric($data['exp']) && (int) $data['exp'] > time();

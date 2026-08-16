@@ -68,11 +68,30 @@ class UserModel implements SeablastModelInterface
     public function knowledge(): stdClass
     {
         if ($this->user->isAuthenticated()) {
-            if (isset($this->superglobals->get['logout'])) {
+            if (
+                $this->superglobals->server['REQUEST_METHOD'] === 'POST' &&
+                isset($this->superglobals->post['logout'])
+            ) {
+                if (!$this->hasValidCsrfToken()) {
+                    Debugger::barDump("CSRF token mismatch", 'ERROR on input');
+                    Debugger::log("CSRF token mismatch", ILogger::ERROR);
+                    return (object) [
+                            'showLogin' => false,
+                            'showLogout' => true,
+                            'message' => 'Token mismatch.',
+                    ];
+                }
                 $this->user->logout();
                 return (object) [
                         'redirectionUrl' => $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
                         . $this->userRoute, // TODO go home instead?
+                ];
+            }
+            if (isset($this->superglobals->get['logout'])) {
+                return (object) [
+                        'showLogin' => false,
+                        'showLogout' => true,
+                        'message' => 'Logout requires form submission.',
                 ];
             }
             return (object) [
@@ -143,11 +162,7 @@ class UserModel implements SeablastModelInterface
                     ];
                 }
                 // CSRF token validation
-                Assert::string($this->superglobals->post['csrfToken']);
-                $csrfTokenManager = new CsrfTokenManager();
-                if (
-                    !$csrfTokenManager->isTokenValid(new CsrfToken('sb_json', $this->superglobals->post['csrfToken']))
-                ) {
+                if (!$this->hasValidCsrfToken()) {
                     Debugger::barDump("CSRF token mismatch", 'ERROR on input');
                     Debugger::log("CSRF token mismatch", ILogger::ERROR);
                     return (object) [
@@ -158,6 +173,14 @@ class UserModel implements SeablastModelInterface
                 }
                 // Assertion only for static analysis as it was already checked above with filter_var.
                 Assert::email($this->superglobals->post['email']);
+                if ($this->user->isLoginEmailRecentlyRequested($this->superglobals->post['email'])) {
+                    return (object) [
+                            'showLogin' => false,
+                            'showLogout' => false,
+                            'message' => 'Na zadanĂ˝ email vĂˇm pĹ™ijde pĹ™ihlaĹˇovacĂ­ odkaz. ProkliknÄ›te ho.'
+                            . ' Ĺ˝ĂˇdnĂˇ hesla nejsou tĹ™eba.',
+                    ];
+                }
                 // All is ok. Send the login email.
                 $this->sendLoginEmail(
                     $this->superglobals->post['email'],
@@ -178,6 +201,20 @@ class UserModel implements SeablastModelInterface
     }
 
     /**
+     * Checks the CSRF token submitted through a form.
+     *
+     * @return bool
+     */
+    private function hasValidCsrfToken(): bool
+    {
+        if (!isset($this->superglobals->post['csrfToken']) || !is_string($this->superglobals->post['csrfToken'])) {
+            return false;
+        }
+        $csrfTokenManager = new CsrfTokenManager();
+        return $csrfTokenManager->isTokenValid(new CsrfToken('sb_json', $this->superglobals->post['csrfToken']));
+    }
+
+    /**
      * Sends registration or login email with URL with token.
      *
      * URL is placed instead of %URL% in AppConstant::TEXT_EMAIL_XXX.
@@ -190,7 +227,6 @@ class UserModel implements SeablastModelInterface
     {
         $loginUrl = $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
             . $this->userRoute . '/?token=' . $token; // TODO session should keep the original target URL - deep login
-        Debugger::barDump($loginUrl, $this->user->isNewUser() ? 'registerUrl' : 'loginUrl');
         $plainText = str_replace(
             '%URL%',
             $loginUrl,
@@ -198,7 +234,6 @@ class UserModel implements SeablastModelInterface
                 $this->user->isNewUser() ? AuthConstant::TEXT_EMAIL_REGISTRATION : AuthConstant::TEXT_EMAIL_LOGIN
             )
         );
-        Debugger::barDump($plainText, 'plainText');
         if (!$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)) {
             Debugger::barDump('Sending emails is not enabled');
             return;

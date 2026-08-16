@@ -65,7 +65,7 @@ session_set_cookie_params(
 ): bool
 ```
 
-Note: `sbRememberMe` cookie is created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
+Note: `sbRememberMe` cookie is created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default). The cookie is set with `HttpOnly`, `Secure`, and `SameSite=Lax`.
 Bundled models inject the flag into `IdentityManager`; direct `IdentityManager` users can call `setRememberMeCookieEnabled(false)`.
 
 ### Routing
@@ -113,7 +113,7 @@ Note 2: vendor/seablast is accessible for Seablast apps, so the web browser asse
 
 ### Social login
 
-The presence of configuration strings `FACEBOOK_APP_ID` or `GOOGLE_CLIENT_ID` enables login by these platforms respectively.
+The presence of configuration strings `FACEBOOK_APP_ID` with `FACEBOOK_APP_SECRET`, or `GOOGLE_CLIENT_ID`, enables login by these platforms respectively. Facebook access tokens are validated through `debug_token` for the configured app before the email is trusted.
 
 Note 1: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
 

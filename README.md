@@ -85,6 +85,11 @@ but if you want to customize it, configure path to your own template within your
         )
 ```
 
+The bundled `UserModel` applies a 120-second cooldown to repeated login-email requests for the same address.
+Suppressed requests return the same generic confirmation as accepted requests so that the response does not reveal
+internal request state. This is a per-address safeguard only; consuming applications should add per-IP and global
+rate limiting at the application, reverse-proxy, or edge layer.
+
 Successful login either reloads the current page or goes to a social login success page:
 
 ```php
@@ -108,6 +113,26 @@ Note 2: `const API_BASE = ''; const flags = [];` MUST be defined in JavaScript a
 ```
 
 Note 1: user.latte uses inherite.latte for all the latte parts, so either you may use it or include user-control.latte or create app version of any of the latte parts.
+
+#### Optional logout-link formatting
+
+The bundled logout form has the `seablast-auth-logout-link` class. It remains a CSRF-protected POST form, but its submit button can optionally be formatted as a link:
+
+```css
+form.seablast-auth-logout-link {
+    display: inline;
+}
+
+form.seablast-auth-logout-link input[type="submit"] {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+```
 
 Note 2: vendor/seablast is accessible for Seablast apps, so the web browser assets (such as `send-auth-token.js`) used by plugins MUST be put into assets folder of the Seablast library.
 

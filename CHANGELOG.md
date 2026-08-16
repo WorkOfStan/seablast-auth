@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Changed` for changes in existing functionality
 
+- Add the documented `seablast-auth-logout-link` styling hook to the logout form.
+
 ### `Deprecated` for soon-to-be removed features
 
 ### `Removed` for now removed features

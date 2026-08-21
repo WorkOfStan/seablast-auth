@@ -54,9 +54,9 @@ final class HashAuthTokens extends AbstractMigration
     private function getAdapterOptions(): array
     {
         $adapter = $this->getAdapter();
-        if (!$adapter instanceof AdapterInterface) {
-            throw new \RuntimeException('Migration adapter is not initialized.');
-        }
+        //if (!$adapter instanceof AdapterInterface) {
+        //    throw new \RuntimeException('Migration adapter is not initialized.');
+        //}
 
         return $adapter->getOptions();
     }

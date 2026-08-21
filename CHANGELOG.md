@@ -7,12 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-feat: Restore logout through a GET link without CSRF form submission.
-refactor: Simplify migration adapter option retrieval into one method.
-
 ### `Added` for new features
 
-- Return email-token logins to the originally requested same-app URL.
+- Return email-token to login to the originally requested same-app URL.
 
 ### `Changed` for changes in existing functionality
 
@@ -33,6 +30,7 @@ refactor: Simplify migration adapter option retrieval into one method.
 - Add `SameSite=Lax` to the Remember Me cookie.
 - Validate database table prefixes before interpolating them into auth SQL identifiers.
 - Validate Facebook access tokens with `debug_token` before trusting Facebook email payloads.
+- feat!: requires `FACEBOOK_APP_SECRET` along `FACEBOOK_APP_ID` to enable Facebook social login
 - Avoid logging social-login exception messages that can include token-bearing request URLs.
 - Require Google tokeninfo payloads to include expiration and verified-email fields.
 - Add unique database indices for auth token columns and migrate existing token rows to hashes.
@@ -40,7 +38,7 @@ refactor: Simplify migration adapter option retrieval into one method.
 
 ## [0.2.0] - 2026-08-22
 
-feat: return email-token logins to the originally requested same-app URL
+feat!: return email-token to login to the originally requested URL
 
 ## [0.1.10] - 2026-07-08
 

@@ -31,6 +31,9 @@ class UserModel implements SeablastModelInterface
 {
     use \Nette\SmartObject;
 
+    private const RETURN_URL_PARAMETER = 'returnUrl';
+    private const TOKEN_PARAMETER = 'token';
+
     /** @var SeablastConfiguration */
     private $configuration;
     /** @var Superglobals */
@@ -68,30 +71,11 @@ class UserModel implements SeablastModelInterface
     public function knowledge(): stdClass
     {
         if ($this->user->isAuthenticated()) {
-            if (
-                $this->superglobals->server['REQUEST_METHOD'] === 'POST' &&
-                isset($this->superglobals->post['logout'])
-            ) {
-                if (!$this->hasValidCsrfToken()) {
-                    Debugger::barDump("CSRF token mismatch", 'ERROR on input');
-                    Debugger::log("CSRF token mismatch", ILogger::ERROR);
-                    return (object) [
-                            'showLogin' => false,
-                            'showLogout' => true,
-                            'message' => 'Token mismatch.',
-                    ];
-                }
+            if (isset($this->superglobals->get['logout'])) {
                 $this->user->logout();
                 return (object) [
                         'redirectionUrl' => $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
                         . $this->userRoute, // TODO go home instead?
-                ];
-            }
-            if (isset($this->superglobals->get['logout'])) {
-                return (object) [
-                        'showLogin' => false,
-                        'showLogout' => true,
-                        'message' => 'Logout requires form submission.',
                 ];
             }
             return (object) [
@@ -113,11 +97,9 @@ class UserModel implements SeablastModelInterface
                     //    . ' <a href="../content-root">Moje kroniky</a>', // HTML is displayed escaped
                     //];
                     // ... so refresh the page ;-)
-                    // TODO go to the original target instead of /user
                     return (object) [
-                            'redirectionUrl' =>
-                            $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
-                            . $this->userRoute,
+                            'redirectionUrl' => $this->getPostLoginRedirectUrl(),
+                            'httpCode' => 303,
                     ];
                 }
                 return (object) [
@@ -177,8 +159,8 @@ class UserModel implements SeablastModelInterface
                     return (object) [
                             'showLogin' => false,
                             'showLogout' => false,
-                            'message' => 'Na zadanĂ˝ email vĂˇm pĹ™ijde pĹ™ihlaĹˇovacĂ­ odkaz. ProkliknÄ›te ho.'
-                            . ' Ĺ˝ĂˇdnĂˇ hesla nejsou tĹ™eba.',
+                            'message' => 'Na zadaný email vám přijde přihlašovací odkaz. Proklikněte ho.'
+                        . ' Žádná hesla nejsou třeba.',
                     ];
                 }
                 // All is ok. Send the login email.
@@ -225,8 +207,7 @@ class UserModel implements SeablastModelInterface
      */
     private function sendLoginEmail(string $emailAddress, string $token): void
     {
-        $loginUrl = $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL)
-            . $this->userRoute . '/?token=' . $token; // TODO session should keep the original target URL - deep login
+        $loginUrl = $this->buildLoginUrl($token);
         $plainText = str_replace(
             '%URL%',
             $loginUrl,
@@ -261,5 +242,175 @@ class UserModel implements SeablastModelInterface
             //    ]
         );
         Debugger::barDump($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS), 'Email sent from');
+    }
+
+    /**
+     * Builds an email login URL carrying a safe, app-relative return target.
+     *
+     * @param string $token
+     * @return string
+     */
+    private function buildLoginUrl(string $token): string
+    {
+        $query = [
+            self::TOKEN_PARAMETER => $token,
+            self::RETURN_URL_PARAMETER => $this->getCurrentReturnUrl(),
+        ];
+        return $this->getAbsoluteUserUrl() . '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    /**
+     * Returns the safe absolute URL to visit after a successful email-token login.
+     *
+     * @return string
+     */
+    private function getPostLoginRedirectUrl(): string
+    {
+        $returnUrl = $this->superglobals->get[self::RETURN_URL_PARAMETER] ?? null;
+        if (!is_string($returnUrl)) {
+            return $this->getAbsoluteUserUrl(false);
+        }
+        $safeReturnUrl = $this->sanitizeReturnUrl($returnUrl);
+        if ($safeReturnUrl === null) {
+            return $this->getAbsoluteUserUrl(false);
+        }
+        return rtrim($this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL), '/')
+            . $safeReturnUrl;
+    }
+
+    /**
+     * Derives an app-relative return target from the current request URI.
+     *
+     * @return string
+     */
+    private function getCurrentReturnUrl(): string
+    {
+        $requestUri = $this->superglobals->server['REQUEST_URI'] ?? null;
+        if (!is_string($requestUri)) {
+            return $this->getUserRoute();
+        }
+        $requestParts = parse_url($requestUri);
+        if (
+            $requestParts === false ||
+            isset($requestParts['scheme']) ||
+            isset($requestParts['host']) ||
+            isset($requestParts['user']) ||
+            isset($requestParts['pass']) ||
+            !isset($requestParts['path'])
+        ) {
+            return $this->getUserRoute();
+        }
+
+        $appRootUrl = $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL);
+        $appRootPath = parse_url($appRootUrl, PHP_URL_PATH);
+        if ($appRootPath === false) {
+            return $this->getUserRoute();
+        }
+        $appRootPath = rtrim($appRootPath ?? '', '/');
+        $requestPath = $requestParts['path'];
+        if ($appRootPath !== '') {
+            if ($requestPath === $appRootPath) {
+                $requestPath = '/';
+            } elseif (strpos($requestPath, $appRootPath . '/') === 0) {
+                $requestPath = substr($requestPath, strlen($appRootPath));
+            } else {
+                return $this->getUserRoute();
+            }
+        }
+
+        $returnUrl = $requestPath;
+        if (isset($requestParts['query'])) {
+            $returnUrl .= '?' . $requestParts['query'];
+        }
+        $safeReturnUrl = $this->sanitizeReturnUrl($returnUrl);
+        if ($safeReturnUrl === null) {
+            return $this->getUserRoute();
+        }
+        if ($this->getUserRoute() !== '/' && $safeReturnUrl === $this->getUserRoute() . '/') {
+            return $this->getUserRoute();
+        }
+        return $safeReturnUrl;
+    }
+
+    /**
+     * Validates and normalizes an app-relative return target.
+     *
+     * @param string $returnUrl
+     * @return string|null
+     */
+    private function sanitizeReturnUrl(string $returnUrl): ?string
+    {
+        if (
+            $returnUrl === '' ||
+            $returnUrl[0] !== '/' ||
+            strpos($returnUrl, '//') === 0 ||
+            preg_match('/[\\x00-\\x1F\\x7F\\\\]/', $returnUrl) === 1
+        ) {
+            return null;
+        }
+        $parts = parse_url($returnUrl);
+        if (
+            $parts === false ||
+            isset($parts['scheme']) ||
+            isset($parts['host']) ||
+            isset($parts['user']) ||
+            isset($parts['pass']) ||
+            isset($parts['fragment']) ||
+            !isset($parts['path'])
+        ) {
+            return null;
+        }
+
+        $decodedPath = $parts['path'];
+        for ($iteration = 0; $iteration < 3; $iteration++) {
+            $nextDecodedPath = rawurldecode($decodedPath);
+            if ($nextDecodedPath === $decodedPath) {
+                break;
+            }
+            $decodedPath = $nextDecodedPath;
+        }
+        if (
+            strpos($decodedPath, '//') === 0 ||
+            preg_match('/[\\x00-\\x1F\\x7F\\\\]/', $decodedPath) === 1
+        ) {
+            return null;
+        }
+        foreach (explode('/', $decodedPath) as $segment) {
+            if ($segment === '.' || $segment === '..') {
+                return null;
+            }
+        }
+
+        $query = [];
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $query);
+        }
+        unset($query[self::TOKEN_PARAMETER], $query[self::RETURN_URL_PARAMETER]);
+        $queryString = http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+        return $parts['path'] . ($queryString === '' ? '' : '?' . $queryString);
+    }
+
+    /**
+     * Returns the configured user route as a normalized app-relative path.
+     *
+     * @return string
+     */
+    private function getUserRoute(): string
+    {
+        $userRoute = '/' . ltrim($this->userRoute, '/');
+        return $userRoute === '/' ? '/' : rtrim($userRoute, '/');
+    }
+
+    /**
+     * Returns the absolute user URL, optionally with the conventional trailing slash used by login links.
+     *
+     * @param bool $trailingSlash
+     * @return string
+     */
+    private function getAbsoluteUserUrl(bool $trailingSlash = true): string
+    {
+        $userUrl = rtrim($this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL), '/')
+            . $this->getUserRoute();
+        return $trailingSlash && $this->getUserRoute() !== '/' ? $userUrl . '/' : $userUrl;
     }
 }

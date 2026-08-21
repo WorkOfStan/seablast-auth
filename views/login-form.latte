@@ -6,9 +6,5 @@
         <input type="submit" value="Ok">
     </form>
 </div>
-<form n:if="$showLogout" class="seablast-auth-logout-link" method="POST" action="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/">
-    <input type="hidden" value="1" name="logout"/>
-    <input type="hidden" value="{$csrfToken}" name="csrfToken"/>
-    <input type="submit" value="Logout">
-</form>
+<p n:if="$showLogout"><a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/?logout" rel="nofollow">Logout</a></p>
 <p n:if="$message">{$message}</p>

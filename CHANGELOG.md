@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+feat: Restore logout through a GET link without CSRF form submission.
+refactor: Simplify migration adapter option retrieval into one method.
+
 ### `Added` for new features
+
+- Return email-token logins to the originally requested same-app URL.
 
 ### `Changed` for changes in existing functionality
 
-- Add the documented `seablast-auth-logout-link` styling hook to the logout form.
+- Document Mailpit-based local login-email testing.
 
 ### `Deprecated` for soon-to-be removed features
 
@@ -25,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove debug output that exposed email login URLs and plaintext login email bodies.
 - Store email, session, and Remember Me tokens as SHA-256 hashes in the database.
-- Require POST with a valid CSRF token for logout.
 - Add `SameSite=Lax` to the Remember Me cookie.
 - Validate database table prefixes before interpolating them into auth SQL identifiers.
 - Validate Facebook access tokens with `debug_token` before trusting Facebook email payloads.
@@ -33,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require Google tokeninfo payloads to include expiration and verified-email fields.
 - Add unique database indices for auth token columns and migrate existing token rows to hashes.
 - Throttle repeated login email requests for the same address.
+
+## [0.2.0] - 2026-08-22
+
+feat: return email-token logins to the originally requested same-app URL
 
 ## [0.1.10] - 2026-07-08
 
@@ -157,6 +165,8 @@ chore: PHP/8.4 support
 
 ## [0.1.3] - 2025-02-01
 
+feat!: Migration renamed to DefaultUserRoles as it concerns Roles, not Groups
+
 ### Added
 
 - UserModel exception hints on POST API call requiring authentication
@@ -168,6 +178,8 @@ chore: PHP/8.4 support
 
 ## [0.1.2] - 2024-12-20
 
+feat: Immediate IdentityManager::loginWithTrustedEmail() for social login plugins. User route configurable.
+
 ### Added
 
 - Prettier-fix.
@@ -177,13 +189,15 @@ chore: PHP/8.4 support
 
 ## [0.1.1] - 2024-06-03
 
+fix: Transport DSN
+
 ### Fixed
 
 - Transport DSN
 
 ## [0.1] - 2024-06-01
 
-IdentityManager and GroupManager
+feat: IdentityManager and GroupManager
 
 ### Added
 
@@ -196,7 +210,8 @@ IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...v0.2.0
 [0.1.10]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.7...v0.1.8

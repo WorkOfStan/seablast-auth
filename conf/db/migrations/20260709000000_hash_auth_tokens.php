@@ -53,10 +53,21 @@ final class HashAuthTokens extends AbstractMigration
      */
     private function getAdapterOptions(): array
     {
-        $adapter = $this->getAdapter();
-        //if (!$adapter instanceof AdapterInterface) {
-        //    throw new \RuntimeException('Migration adapter is not initialized.');
-        //}
+        return $this->readAdapterOptions($this->getAdapter());
+    }
+
+    /**
+     * Keep getAdapterOptions calling readAdapterOptions to maintain compatibility PHP >= 8.1
+     * and below where $this->getAdapter() returns Phinx\Db\Adapter\AdapterInterface|null
+     *
+     * @param mixed $adapter
+     * @return array<string, mixed>
+     */
+    private function readAdapterOptions($adapter): array
+    {
+        if (!$adapter instanceof AdapterInterface) {
+            throw new \RuntimeException('Migration adapter is not initialized.');
+        }
 
         return $adapter->getOptions();
     }

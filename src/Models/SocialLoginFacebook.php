@@ -51,6 +51,7 @@ class SocialLoginFacebook
             !$this->configuration->exists(AuthConstant::FACEBOOK_APP_ID) ||
             !$this->configuration->exists(AuthConstant::FACEBOOK_APP_SECRET)
         ) {
+            Debugger::barDump('FB_APP ID || SECRET missing');
             return null;
         }
 
@@ -153,10 +154,35 @@ class SocialLoginFacebook
             Debugger::log('Facebook debug_token request failed: ' . get_class($e), ILogger::ERROR);
             return false;
         }
-
         if ($response->getStatusCode() !== 200) {
+            $errorDetails = [];
+            $errorPayload = json_decode($response->getBody()->getContents(), true);
+            if (
+                is_array($errorPayload)
+                && isset($errorPayload['error'])
+                && is_array($errorPayload['error'])
+            ) {
+                $facebookError = $errorPayload['error'];
+                foreach (['type', 'code', 'error_subcode', 'fbtrace_id'] as $field) {
+                    if (
+                        isset($facebookError[$field])
+                        && (is_string($facebookError[$field]) || is_int($facebookError[$field]))
+                    ) {
+                        $errorDetails[] = $field . '=' . (string) $facebookError[$field];
+                    }
+                }
+                if (isset($facebookError['message']) && is_string($facebookError['message'])) {
+                    $message = str_replace(
+                        [$accessToken, $this->configuration->getString(AuthConstant::FACEBOOK_APP_SECRET)],
+                        '[redacted]',
+                        $facebookError['message']
+                    );
+                    $errorDetails[] = 'message=' . substr($message, 0, 500);
+                }
+            }
             Debugger::log(
-                'Facebook debug_token request failed with status ' . $response->getStatusCode(),
+                'Facebook debug_token request failed with status ' . $response->getStatusCode()
+                    . ($errorDetails === [] ? '' : ': ' . implode(', ', $errorDetails)),
                 ILogger::ERROR
             );
             return false;

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### `Fixed` for any bugfixes
 
 - Validate migration table-affix and Facebook app ID value types before string use.
+- Log redacted Facebook error details when debug-token validation requests fail.
 
 ### `Security` in case of vulnerabilities
 

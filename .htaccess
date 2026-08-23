@@ -22,6 +22,7 @@ RedirectMatch 404 composer\.
 RedirectMatch 404 /package\.json
 RedirectMatch 404 /package\-lock\.json
 RedirectMatch 404 /phpstan\.neon\.dist
+RedirectMatch 404 \.phpunit\.result\.cache
 RedirectMatch 404 phpunit\.xml
 # hide files with these extensions
 RedirectMatch 404 \.md$

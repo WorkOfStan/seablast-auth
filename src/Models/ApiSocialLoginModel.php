@@ -79,7 +79,7 @@ class ApiSocialLoginModel extends GenericRestApiJsonModel
         } catch (\Exception $e) {
             $this->httpCode = 500;
             $this->message = 'Unexpected server error';
-            Debugger::log($e->getMessage(), ILogger::ERROR);
+            Debugger::log('ApiSocialLoginModel failed: ' . get_class($e), ILogger::ERROR);
         }
 
         return $result;

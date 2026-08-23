@@ -65,7 +65,7 @@ session_set_cookie_params(
 ): bool
 ```
 
-Note: `sbRememberMe` cookie is created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default).
+Note: `sbRememberMe` cookie is created/read only if the web is accessed over HTTPS and if allowed by `AuthApp:FLAG_REMEMBER_ME_COOKIE` (allowed by default). The cookie is set with `HttpOnly`, `Secure`, and `SameSite=Lax`.
 Bundled models inject the flag into `IdentityManager`; direct `IdentityManager` users can call `setRememberMeCookieEnabled(false)`.
 
 ### Routing
@@ -84,6 +84,15 @@ but if you want to customize it, configure path to your own template within your
             ]
         )
 ```
+
+The bundled `UserModel` applies a 120-second cooldown to repeated login-email requests for the same address.
+Suppressed requests return the same generic confirmation as accepted requests so that the response does not reveal
+internal request state. This is a per-address safeguard only; consuming applications should add per-IP and global
+rate limiting at the application, reverse-proxy, or edge layer.
+
+Email login links carry the originally requested app-relative path and query string in a URL-encoded `returnUrl`
+parameter. After a successful one-time-token login, `UserModel` redirects back to that same-app target. Missing or
+invalid return targets fall back to the configured user route; external return URLs are never accepted.
 
 Successful login either reloads the current page or goes to a social login success page:
 
@@ -113,7 +122,7 @@ Note 2: vendor/seablast is accessible for Seablast apps, so the web browser asse
 
 ### Social login
 
-The presence of configuration strings `FACEBOOK_APP_ID` or `GOOGLE_CLIENT_ID` enables login by these platforms respectively.
+The presence of configuration strings `FACEBOOK_APP_ID` with `FACEBOOK_APP_SECRET`, or `GOOGLE_CLIENT_ID`, enables login by these platforms respectively. Facebook access tokens are validated through `debug_token` for the configured app before the email is trusted.
 
 Note 1: social login can be deactivated in an app by `->deactivate(AuthConstant::FLAG_USE_SOCIAL_LOGIN)` in the configuration.
 
@@ -145,6 +154,35 @@ In order to send emails, the `SeablastConstant::USER_MAIL_ENABLED` flag MUST be 
     ]
   );
 ```
+
+#### Local login-email testing with Mailpit
+
+Raw email login tokens are intentionally neither exposed in Tracy dumps nor stored in recoverable form in the
+database, where only their hashes are kept. For local development, use [Mailpit](https://mailpit.axllent.org/) to
+capture the outgoing email and retrieve its one-time login link. By default, Mailpit accepts SMTP connections on
+port `1025` and provides its web interface at [http://localhost:8025/](http://localhost:8025/).
+
+Enable local email delivery in your application's `conf/app.conf.local.php`:
+
+```php
+<?php
+
+use Seablast\Seablast\SeablastConfiguration;
+use Seablast\Seablast\SeablastConstant;
+
+return static function (SeablastConfiguration $SBConfig): void {
+    $SBConfig->flag
+        ->activate(SeablastConstant::ADMIN_MAIL_ENABLED)
+        ->activate(SeablastConstant::USER_MAIL_ENABLED);
+    $SBConfig
+        ->setString(SeablastConstant::FROM_MAIL_ADDRESS, 'no-reply@my-app.local')
+        ->setString(SeablastConstant::ADMIN_MAIL_ADDRESS, 'no-reply@my-app.local')
+        ->setInt(SeablastConstant::SB_SMTP_PORT, 1025);
+};
+```
+
+The default SMTP host is already `localhost`. Start Mailpit, request a login email, then open its web interface and
+follow the captured login link. Keep this mail-catching configuration local; do not use it in production.
 
 ## Testing
 

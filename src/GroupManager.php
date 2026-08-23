@@ -39,6 +39,9 @@ class GroupManager
      */
     public function __construct(\mysqli $mysqli, int $userId, string $tablePrefix = '')
     {
+        if (!preg_match('/\A[A-Za-z0-9_]*\z/', $tablePrefix)) {
+            throw new \InvalidArgumentException('Database table prefix contains unsupported characters.');
+        }
         $this->mysqli = $mysqli;
         $this->tablePrefix = $tablePrefix;
         $this->userId = $userId;

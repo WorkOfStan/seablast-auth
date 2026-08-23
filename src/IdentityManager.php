@@ -30,6 +30,8 @@ class IdentityManager implements IdentityManagerInterface
 {
     use \Nette\SmartObject;
 
+    private const TOKEN_HASH_ALGORITHM = 'sha256';
+
     /** @var string Cookie path that may be injected. */
     private $cookiePath = '';
     /** @var string User email. */
@@ -112,13 +114,13 @@ class IdentityManager implements IdentityManagerInterface
         // Insert a short-lived session token and, when enabled over HTTPS, a long-lived Remember Me token.
         $sessionId = $this->generateToken();
         $values = [
-            "(" . (int) $userId . ", '" . $this->mysqli->real_escape_string($sessionId) . "', CURRENT_TIMESTAMP)"
+            "(" . (int) $userId . ", '" . $this->escapeTokenHash($sessionId) . "', CURRENT_TIMESTAMP)"
         ];
         $rememberMeToken = null;
         $shouldCreateRememberMe = $this->rememberMeCookieEnabled && $this->isHttps($_SERVER);
         if ($shouldCreateRememberMe) {
             $rememberMeToken = $this->generateToken();
-            $values[] = "(" . (int) $userId . ", '" . $this->mysqli->real_escape_string($rememberMeToken)
+            $values[] = "(" . (int) $userId . ", '" . $this->escapeTokenHash($rememberMeToken)
                 . "', CURRENT_TIMESTAMP)";
         }
         $this->executeWriteQuery(
@@ -143,7 +145,7 @@ class IdentityManager implements IdentityManagerInterface
     {
         $this->executeWriteQuery(
             "DELETE FROM `{$this->tablePrefix}session_user` WHERE token = '"
-            . $this->mysqli->real_escape_string($token) . "';"
+            . $this->escapeTokenHash($token) . "';"
         );
     }
 
@@ -173,7 +175,7 @@ class IdentityManager implements IdentityManagerInterface
         }
         // delete the old cookie id from session_user as new one will be set in createSessionId anyway
         $this->executeWriteQuery("DELETE FROM `{$this->tablePrefix}session_user` WHERE user_id = " . $userId
-            . " AND token = '" . $this->mysqli->real_escape_string($cookie['sbRememberMe']) . "';");
+            . " AND token = '" . $this->escapeTokenHash($cookie['sbRememberMe']) . "';");
         $this->createSessionId($userId); // incidentally also updates the RM cookie
         return true;
     }
@@ -226,6 +228,17 @@ class IdentityManager implements IdentityManagerInterface
     private function generateToken(): string
     {
         return bin2hex(random_bytes(16));
+    }
+
+    /**
+     * Returns an escaped hash of a bearer token for database storage or lookup.
+     *
+     * @param string $token
+     * @return string
+     */
+    private function escapeTokenHash(string $token): string
+    {
+        return $this->mysqli->real_escape_string($this->hashToken($token));
     }
 
     /**
@@ -288,6 +301,17 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
+     * Hashes a bearer token before it is stored or looked up in the database.
+     *
+     * @param string $token
+     * @return string
+     */
+    private function hashToken(string $token): string
+    {
+        return hash(self::TOKEN_HASH_ALGORITHM, $token);
+    }
+
+    /**
      * Determines if the user with the given session token exists and is not older than specified days.
      *
      * @param string $sessionToken Session token to validate.
@@ -296,7 +320,7 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function getUserForSessionId(string $sessionToken, int $days = 1): ?int
     {
-        $sessionTokenEscaped = $this->mysqli->real_escape_string($sessionToken);
+        $sessionTokenHashEscaped = $this->escapeTokenHash($sessionToken);
         // Calculate $days from now in PHP instead of `NOW() - INTERVAL` in order to cache the SQL responses
         $oneDayTillNow = new DateTime('-' . $days . ' day');
         // Regardless of rounding up, reset minutes (and seconds) to 0
@@ -304,7 +328,7 @@ class IdentityManager implements IdentityManagerInterface
         $pastDate = $oneDayTillNow->format('Y-m-d H:i:s');
         Debugger::barDump($pastDate, 'Past date'); // debug
         $row = $this->fetchFirstRow("SELECT user_id, updated FROM `{$this->tablePrefix}session_user` WHERE token = '"
-            . $sessionTokenEscaped . "' AND updated > '" . $pastDate . "' LIMIT 1;");
+            . $sessionTokenHashEscaped . "' AND updated > '" . $pastDate . "' LIMIT 1;");
         if (is_null($row)) {
             return null;
         }
@@ -320,7 +344,7 @@ class IdentityManager implements IdentityManagerInterface
         if ((string) $row['updated'] < $fiveMinutesAgo) {
             $this->executeWriteQuery(
                 "UPDATE `{$this->tablePrefix}session_user` SET updated = CURRENT_TIMESTAMP WHERE token = '"
-                . $sessionTokenEscaped . "';"
+                . $sessionTokenHashEscaped . "';"
             );
         } else {
             Debugger::barDump('No session update as younger than 5 minutes');
@@ -413,9 +437,9 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function isTokenValid(string $emailToken): bool
     {
-        $emailTokenEscaped = $this->mysqli->real_escape_string($emailToken);
+        $emailTokenHashEscaped = $this->escapeTokenHash($emailToken);
         $row = $this->fetchFirstRow(
-            "SELECT id, email FROM `{$this->tablePrefix}email_token` WHERE token = '" . $emailTokenEscaped
+            "SELECT id, email FROM `{$this->tablePrefix}email_token` WHERE token = '" . $emailTokenHashEscaped
             . "' AND created > (NOW() - INTERVAL 15 MINUTE) LIMIT 1;"
         );
         if (is_null($row)) {
@@ -449,9 +473,28 @@ class IdentityManager implements IdentityManagerInterface
         $token = $this->generateToken();
         // Generate and store a token for this email
         $this->executeWriteQuery("INSERT INTO `{$this->tablePrefix}email_token` (email, token, created) VALUES ('"
-            . $this->mysqli->real_escape_string($email) . "', '" . $this->mysqli->real_escape_string($token)
+            . $this->mysqli->real_escape_string($email) . "', '" . $this->escapeTokenHash($token)
             . "', CURRENT_TIMESTAMP);");
         return $token;
+    }
+
+    /**
+     * Checks whether a login email was requested recently enough to throttle another email.
+     *
+     * @param string $email
+     * @param int $seconds
+     * @return bool
+     */
+    public function isLoginEmailRecentlyRequested(string $email, int $seconds = 120): bool
+    {
+        Assert::email($email);
+        $seconds = max(1, $seconds);
+        $row = $this->fetchFirstRow(
+            "SELECT id FROM `{$this->tablePrefix}email_token` WHERE email = '"
+            . $this->mysqli->real_escape_string($email) . "' AND created > (NOW() - INTERVAL "
+            . (int) $seconds . " SECOND) LIMIT 1;"
+        );
+        return $row !== null;
     }
 
     /**
@@ -556,18 +599,52 @@ class IdentityManager implements IdentityManagerInterface
     private function setCookie(string $value, int $time): void
     {
         Debugger::barDump($this->cookiePath, 'setcookie - Cookie Path');
-        $result = setcookie(
-            'sbRememberMe',
-            $value,
-            $time, // expire time: days * hours * minutes * seconds
-            $this->cookiePath, // defined, as '' may change (between /app and /app/user)
-            '', // default cookie host
-            true, // Set a long-lived cookie for HTTPS only
-            true // http only
-        );
+        if (PHP_VERSION_ID >= 70300) {
+            $result = setcookie(
+                'sbRememberMe',
+                $value,
+                [
+                    'expires' => $time, // expire time: days * hours * minutes * seconds
+                    'path' => $this->cookiePath, // defined, as '' may change (between /app and /app/user)
+                    'domain' => '', // default cookie host
+                    'secure' => true, // Set a long-lived cookie for HTTPS only
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ]
+            );
+        } else {
+            $result = $this->setSameSiteCookieForLegacyPhp($value, $time);
+        }
         if ($result === false) {
             Debugger::log('sbRememberMe cookie could not be set.', ILogger::ERROR);
         }
+    }
+
+    /**
+     * Emits a SameSite cookie header for PHP 7.2, which lacks the setcookie() options array.
+     *
+     * @param string $value
+     * @param int $time
+     * @return bool
+     */
+    private function setSameSiteCookieForLegacyPhp(string $value, int $time): bool
+    {
+        if (headers_sent()) {
+            return false;
+        }
+        $cookie = [
+            'sbRememberMe=' . rawurlencode($value),
+            'Expires=' . gmdate('D, d M Y H:i:s T', $time),
+            'Max-Age=' . max(0, $time - time()),
+        ];
+        if ($this->cookiePath !== '') {
+            $cookie[] = 'Path=' . $this->cookiePath;
+        }
+        $cookie[] = 'Secure';
+        $cookie[] = 'HttpOnly';
+        $cookie[] = 'SameSite=Lax';
+        header('Set-Cookie: ' . implode('; ', $cookie), false);
+        return true;
     }
 
     /**
@@ -605,6 +682,9 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function setTablePrefix(string $tablePrefix): void
     {
+        if (!preg_match('/\A[A-Za-z0-9_]*\z/', $tablePrefix)) {
+            throw new \InvalidArgumentException('Database table prefix contains unsupported characters.');
+        }
         $this->tablePrefix = $tablePrefix;
     }
 }

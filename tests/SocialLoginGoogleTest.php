@@ -24,6 +24,7 @@ class SocialLoginGoogleTest extends TestCase
             'iss' => 'https://accounts.google.com',
             'email' => 'user@example.com',
             'exp' => (string) (time() + 3600),
+            'email_verified' => 'true',
         ];
 
         $model = $this->createModel([
@@ -41,6 +42,7 @@ class SocialLoginGoogleTest extends TestCase
                 'iss' => 'accounts.google.com',
                 'email' => 'user@example.com',
                 'exp' => (string) (time() - 1),
+                'email_verified' => 'true',
             ])),
         ]);
 
@@ -55,10 +57,40 @@ class SocialLoginGoogleTest extends TestCase
                 'iss' => 'https://accounts.google.com',
                 'email' => 'user@example.com',
                 'exp' => (string) (time() + 3600),
+                'email_verified' => 'true',
             ])),
         ]);
 
         $this->assertFalse($model->authTokenToPayload('wrong-audience-id-token'));
+    }
+
+    public function testRejectsMissingExpiration(): void
+    {
+        $model = $this->createModel([
+            new Response(200, [], (string) json_encode([
+                'aud' => self::GOOGLE_CLIENT_ID,
+                'iss' => 'https://accounts.google.com',
+                'email' => 'user@example.com',
+                'email_verified' => 'true',
+            ])),
+        ]);
+
+        $this->assertFalse($model->authTokenToPayload('missing-expiration-id-token'));
+    }
+
+    public function testRejectsUnverifiedEmail(): void
+    {
+        $model = $this->createModel([
+            new Response(200, [], (string) json_encode([
+                'aud' => self::GOOGLE_CLIENT_ID,
+                'iss' => 'https://accounts.google.com',
+                'email' => 'user@example.com',
+                'exp' => (string) (time() + 3600),
+                'email_verified' => 'false',
+            ])),
+        ]);
+
+        $this->assertFalse($model->authTokenToPayload('unverified-email-id-token'));
     }
 
     public function testRejectsMalformedTokeninfoResponse(): void

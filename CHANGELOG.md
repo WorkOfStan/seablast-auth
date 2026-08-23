@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added` for new features
 
+- Return email-token to login to the originally requested same-app URL.
+
 ### `Changed` for changes in existing functionality
+
+- Document Mailpit-based local login-email testing.
 
 ### `Deprecated` for soon-to-be removed features
 
@@ -17,7 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed` for any bugfixes
 
+- Validate migration table-affix and Facebook app ID value types before string use.
+- Log redacted Facebook error details when debug-token validation requests fail.
+
 ### `Security` in case of vulnerabilities
+
+- Remove debug output that exposed email login URLs and plaintext login email bodies.
+- Store email, session, and Remember Me tokens as SHA-256 hashes in the database.
+- Add `SameSite=Lax` to the Remember Me cookie.
+- Validate database table prefixes before interpolating them into auth SQL identifiers.
+- Validate Facebook access tokens with `debug_token` before trusting Facebook email payloads.
+- feat!: requires `FACEBOOK_APP_SECRET` along `FACEBOOK_APP_ID` to enable Facebook social login
+- Avoid logging social-login exception messages that can include token-bearing request URLs.
+- Require Google tokeninfo payloads to include expiration and verified-email fields.
+- Add unique database indices for auth token columns and migrate existing token rows to hashes.
+- Throttle repeated login email requests for the same address.
 
 ## [0.1.10] - 2026-07-08
 
@@ -142,6 +160,8 @@ chore: PHP/8.4 support
 
 ## [0.1.3] - 2025-02-01
 
+feat!: Migration renamed to DefaultUserRoles as it concerns Roles, not Groups
+
 ### Added
 
 - UserModel exception hints on POST API call requiring authentication
@@ -153,6 +173,8 @@ chore: PHP/8.4 support
 
 ## [0.1.2] - 2024-12-20
 
+feat: Immediate IdentityManager::loginWithTrustedEmail() for social login plugins. User route configurable.
+
 ### Added
 
 - Prettier-fix.
@@ -162,13 +184,15 @@ chore: PHP/8.4 support
 
 ## [0.1.1] - 2024-06-03
 
+fix: Transport DSN
+
 ### Fixed
 
 - Transport DSN
 
 ## [0.1] - 2024-06-01
 
-IdentityManager and GroupManager
+feat: IdentityManager and GroupManager
 
 ### Added
 

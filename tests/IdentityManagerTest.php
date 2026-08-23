@@ -15,6 +15,8 @@ class IdentityManagerTest extends TestCase
 {
     /** @var \mysqli */
     private $mysqli;
+    /** @var string */
+    private $tablePrefix;
     /** @var IdentityManager */
     protected $user;
 
@@ -29,8 +31,9 @@ class IdentityManagerTest extends TestCase
         $setup = new SeablastSetup(); // combine configuration files into a valid configuration
         $setup->getConfiguration()->setString(SeablastConstant::SB_PHINX_ENVIRONMENT, 'testing');
         $this->mysqli = $setup->getConfiguration()->dbms();
+        $this->tablePrefix = $setup->getConfiguration()->dbmsTablePrefix();
         $this->user = new IdentityManager($this->mysqli);
-        $this->user->setTablePrefix($setup->getConfiguration()->dbmsTablePrefix());
+        $this->user->setTablePrefix($this->tablePrefix);
     }
 
     public function testSqlInjection(): void
@@ -58,6 +61,16 @@ class IdentityManagerTest extends TestCase
 
         // All is ok. Send the login email.
         $token = $this->user->login($randomEmail);
+
+        $escapedEmail = $this->mysqli->real_escape_string($randomEmail);
+        $result = $this->mysqli->query(
+            "SELECT token FROM `{$this->tablePrefix}email_token` WHERE email = '" . $escapedEmail . "' LIMIT 1;"
+        );
+        $this->assertInstanceOf(\mysqli_result::class, $result);
+        $row = $result->fetch_assoc();
+        $this->assertIsArray($row);
+        $this->assertSame(hash('sha256', $token), $row['token']);
+        $this->assertNotSame($token, $row['token']);
 
         // Token should be valid
         $this->assertTrue($this->user->isTokenValid($token), 'Token should be valid');
@@ -100,5 +113,11 @@ class IdentityManagerTest extends TestCase
             // There should be an exception if $sqlInjectionString is not a valid email
             $this->assertNotSame($invalidEmailString, filter_var($invalidEmailString, FILTER_VALIDATE_EMAIL));
         }
+    }
+
+    public function testRejectsUnsafeTablePrefix(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->user->setTablePrefix('bad`prefix');
     }
 }

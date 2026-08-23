@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### `Added` for new features
 
 - Return email-token to login to the originally requested same-app URL.
+- Support optional hourly-rounded group membership expiration and token-defined membership durations.
 
 ### `Changed` for changes in existing functionality
 

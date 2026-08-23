@@ -13,8 +13,8 @@ use Webmozart\Assert\Assert;
  *
  * Phinx migrations will create following tables
  * - group: id, created, name_public, internal_notes
- * - user_group: id,created,user_id (foreign id),group_id (foreign id)
- * - group_activation_tokens: id,created,group_id (foreign id),valid_from,valid_to,token
+ * - user_group: id,created,user_id (foreign id),group_id (foreign id),valid_to
+ * - group_activation_tokens: id,created,group_id (foreign id),valid_from,valid_to,valid_for_days,token
  */
 class GroupManager
 {
@@ -80,15 +80,32 @@ class GroupManager
             return self::ACTIVATION_WRONG_TOKEN;
         }
 
-        // Check if already activated
+        $membershipValidTo = null;
+        if ($tokenData['valid_for_days'] !== null) {
+            $rawValidForDays = $tokenData['valid_for_days'];
+            if (
+                (!is_string($rawValidForDays) && !is_int($rawValidForDays))
+                || !preg_match('/\A[1-9][0-9]*\z/', (string) $rawValidForDays)
+            ) {
+                return self::ACTIVATION_FAILED;
+            }
+            $membershipValidTo = (new \DateTimeImmutable())->setTimestamp(
+                time() + ((int) $rawValidForDays * 86400)
+            );
+        }
+
+        // Check if already activated and still valid.
+        $membershipHourStart = self::roundDownToHour(time());
         $resultUserGroup = $this->mysqli->query('SELECT * FROM `' . $this->tablePrefix . 'user_group` WHERE user_id = '
-            . (int) $this->userId . ' AND group_id = ' . (int) $tokenData['group_id'] . ';');
+            . (int) $this->userId . ' AND group_id = ' . (int) $tokenData['group_id']
+            . ' AND (valid_to IS NULL OR valid_to > FROM_UNIXTIME(' . $membershipHourStart . ')) LIMIT 1;');
         if (is_bool($resultUserGroup)) {
             throw new \Exception('Db expected.');
         }
         return ($resultUserGroup->fetch_row()) ? self::ACTIVATION_ALREADY :
             // Activate
-            ($this->addUserToGroup((int) $tokenData['group_id']) ? self::ACTIVATION_NEW : self::ACTIVATION_FAILED);
+            ($this->addUserToGroup((int) $tokenData['group_id'], $membershipValidTo)
+                ? self::ACTIVATION_NEW : self::ACTIVATION_FAILED);
     }
 
     /**
@@ -97,13 +114,18 @@ class GroupManager
      * Intended to be called by a payment API or during an activation code procedure.
      *
      * @param int $groupId
+     * @param \DateTimeInterface|null $validTo Exact expiration time; null means unlimited membership.
      * @return bool
      */
-    public function addUserToGroup(int $groupId): bool
+    public function addUserToGroup(int $groupId, ?\DateTimeInterface $validTo = null): bool
     {
+        $validToSql = $validTo === null
+            ? 'NULL'
+            : 'FROM_UNIXTIME(' . $validTo->getTimestamp() . ')';
         return (bool) $this->mysqli->query(
-            'INSERT INTO `' . $this->tablePrefix . 'user_group` (created, user_id, group_id) VALUES (NOW(), '
-            . (int) $this->userId . ', ' . (int) $groupId . ');'
+            'INSERT INTO `' . $this->tablePrefix
+            . 'user_group` (created, user_id, group_id, valid_to) VALUES (NOW(), '
+            . (int) $this->userId . ', ' . (int) $groupId . ', ' . $validToSql . ');'
         );
     }
 
@@ -117,9 +139,12 @@ class GroupManager
      */
     public function getGroupsByUserId(): array
     {
+        $membershipHourStart = self::roundDownToHour(time());
         $result = $this->mysqli->query(
-            'SELECT ug.group_id FROM `' . $this->tablePrefix . 'group` g INNER JOIN `' . $this->tablePrefix
-            . 'user_group` ug ON g.id = ug.group_id  WHERE ug.user_id = ' . (int) $this->userId . ';'
+            'SELECT DISTINCT ug.group_id FROM `' . $this->tablePrefix . 'group` g INNER JOIN `'
+            . $this->tablePrefix . 'user_group` ug ON g.id = ug.group_id WHERE ug.user_id = '
+            . (int) $this->userId . ' AND (ug.valid_to IS NULL OR ug.valid_to > FROM_UNIXTIME('
+            . $membershipHourStart . '));'
         ); // TODO maybe just `WHERE user_id` would be sufficient. Or I want group name as well here?
         if (is_bool($result)) {
             throw new DbmsException('Db expected.');
@@ -131,6 +156,17 @@ class GroupManager
             $groups[] = (int) $row['group_id'];
         }
         return $groups;
+    }
+
+    /**
+     * Return the start of the hour containing the supplied Unix timestamp.
+     *
+     * @param int $timestamp
+     * @return int
+     */
+    private static function roundDownToHour(int $timestamp): int
+    {
+        return intdiv($timestamp, 3600) * 3600;
     }
 
     /**

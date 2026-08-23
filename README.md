@@ -51,6 +51,16 @@ Following tables will be created (prefixed as set in your app), so avoid conflic
 - users (user)
 - user_group (user_groups)
 
+### Group membership validity
+
+`GroupManager::addUserToGroup()` accepts an optional `DateTimeInterface $validTo` argument. A null value creates
+an unlimited membership. `group_activation_tokens.valid_for_days` can likewise be null for unlimited membership,
+or a positive number of 24-hour periods starting when the token is activated.
+
+Membership expiration is evaluated using the start of the current hour. A `valid_to` value within the current hour
+therefore remains effective until the next whole hour, while a value exactly on an hour boundary expires at that
+boundary. The activation token's own `valid_from` and `valid_to` window remains exact.
+
 ### Cookies
 
 IdentityManager expects cookie scope being set already by:

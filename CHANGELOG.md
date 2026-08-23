@@ -37,10 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add unique database indices for auth token columns and migrate existing token rows to hashes.
 - Throttle repeated login email requests for the same address.
 
-## [0.2.0] - 2026-08-22
-
-feat!: return email-token to login to the originally requested URL
-
 ## [0.1.10] - 2026-07-08
 
 fix: mark social-logins with `last_login`
@@ -209,8 +205,7 @@ feat: IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...v0.2.0
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...HEAD
 [0.1.10]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.7...v0.1.8

@@ -9,12 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Added` for new features
 
-- Return email-token to login to the originally requested same-app URL.
-- Support optional hourly-rounded group membership expiration and token-defined membership durations.
-
 ### `Changed` for changes in existing functionality
-
-- Document Mailpit-based local login-email testing.
 
 ### `Deprecated` for soon-to-be removed features
 
@@ -22,10 +17,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Fixed` for any bugfixes
 
+### `Security` in case of vulnerabilities
+
+## [0.2.0] - 2026-08-23
+
+feat!: return email-token to login to the originally requested URL
+
+### Added
+
+- Return email-token to login to the originally requested same-app URL.
+- Document Mailpit-based local login-email testing.
+- Support optional hourly-rounded group membership expiration and token-defined membership durations.
+
+### Fixed
+
 - Validate migration table-affix and Facebook app ID value types before string use.
 - Log redacted Facebook error details when debug-token validation requests fail.
 
-### `Security` in case of vulnerabilities
+### Security
 
 - Remove debug output that exposed email login URLs and plaintext login email bodies.
 - Store email, session, and Remember Me tokens as SHA-256 hashes in the database.
@@ -206,7 +215,8 @@ feat: IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...v0.2.0
 [0.1.10]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.7...v0.1.8

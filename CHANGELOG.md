@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+## [0.2.1] - 2026-08-30
+
+fix!: Enforce `NOT NULL` for required database columns
+
+### Fixed
+
+- fix!: Enforce `NOT NULL` for required authentication and group database columns across supported Phinx versions. (Required `NOT NULL` constraints cannot be safely reverted because prior nullability depends on the Phinx version.)
+
 ## [0.2.0] - 2026-08-23
 
 feat!: return email-token to login to the originally requested URL
@@ -215,7 +223,8 @@ feat: IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...v0.2.0
 [0.1.10]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.8...v0.1.9

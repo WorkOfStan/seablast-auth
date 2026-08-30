@@ -6,6 +6,16 @@ use Phinx\Db\Adapter\AdapterInterface;
 use Phinx\Migration\AbstractMigration;
 use Phinx\Migration\IrreversibleMigrationException;
 
+/**
+ * @phpstan-type ColumnOptions array{
+ *     identity?: bool,
+ *     signed?: bool,
+ *     limit?: int,
+ *     default?: int|string,
+ *     null: bool
+ * }
+ * @phpstan-type ColumnDefinition array{type: string, options: ColumnOptions}
+ */
 final class EnforceRequiredColumnsNotNull extends AbstractMigration
 {
     public function up(): void
@@ -36,7 +46,7 @@ final class EnforceRequiredColumnsNotNull extends AbstractMigration
     }
 
     /**
-     * @return array<string, array<string, array{type: string, options: array<string, mixed>}>>
+     * @return array<string, array<string, ColumnDefinition>>
      */
     private function columnDefinitions(): array
     {
@@ -175,7 +185,7 @@ final class EnforceRequiredColumnsNotNull extends AbstractMigration
     }
 
     /**
-     * @param array<string, array<string, array{type: string, options: array<string, mixed>}>> $columnDefinitions
+     * @param array<string, array<string, ColumnDefinition>> $columnDefinitions
      */
     private function assertRequiredColumnsContainNoNulls(array $columnDefinitions): void
     {

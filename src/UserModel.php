@@ -135,8 +135,9 @@ class UserModel implements SeablastModelInterface
             ];
         } elseif ($this->superglobals->server['REQUEST_METHOD'] === 'POST') {
             if ((isset($this->superglobals->post['csrfToken'])) && (isset($this->superglobals->post['email']))) {
+                $email = $this->superglobals->post['email'];
                 // validate email
-                if (!filter_var($this->superglobals->post['email'], FILTER_VALIDATE_EMAIL)) {
+                if (!is_string($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     return (object) [
                             'showLogin' => true,
                             'showLogout' => false,
@@ -154,8 +155,8 @@ class UserModel implements SeablastModelInterface
                     ];
                 }
                 // Assertion only for static analysis as it was already checked above with filter_var.
-                Assert::email($this->superglobals->post['email']);
-                if ($this->user->isLoginEmailRecentlyRequested($this->superglobals->post['email'])) {
+                Assert::email($email);
+                if ($this->user->isLoginEmailRecentlyRequested($email)) {
                     return (object) [
                             'showLogin' => false,
                             'showLogout' => false,
@@ -165,8 +166,8 @@ class UserModel implements SeablastModelInterface
                 }
                 // All is ok. Send the login email.
                 $this->sendLoginEmail(
-                    $this->superglobals->post['email'],
-                    $this->user->login($this->superglobals->post['email'])
+                    $email,
+                    $this->user->login($email)
                 );
                 return (object) [
                         'showLogin' => false,

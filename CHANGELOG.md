@@ -30,6 +30,7 @@ fix!: Enforce `NOT NULL` for required database columns
 ### Fixed
 
 - fix!: Enforce `NOT NULL` for required authentication and group database columns across supported Phinx versions. (Required `NOT NULL` constraints cannot be safely reverted because prior nullability depends on the Phinx version.)
+- Validate email option types before passing them to string-only validators.
 
 ## [0.2.0] - 2026-08-23
 

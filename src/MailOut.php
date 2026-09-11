@@ -138,6 +138,7 @@ class MailOut
 
         // Reply-To (odpovědět komu)
         if (isset($options['replyTo'])) {
+            Assert::string($options['replyTo'], 'Option "replyTo" must be a string.');
             Assert::email($options['replyTo'], 'Invalid "replyTo" e-mail address: %s');
             $email->replyTo($options['replyTo']);
         }

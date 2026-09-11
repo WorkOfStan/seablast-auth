@@ -35,9 +35,9 @@ class UserModel implements SeablastModelInterface
     private const TOKEN_PARAMETER = 'token';
 
     /** @var SeablastConfiguration */
-    private $configuration;
+    protected $configuration;
     /** @var Superglobals */
-    private $superglobals;
+    protected $superglobals;
     /** @var IdentityManager */
     private $user;
     /** @var string Route to the user log-in/log-out page */
@@ -280,10 +280,11 @@ class UserModel implements SeablastModelInterface
 
     /**
      * Derives an app-relative return target from the current request URI.
+     * It's protected so that it can be used by child class in an app.
      *
      * @return string
      */
-    private function getCurrentReturnUrl(): string
+    protected function getCurrentReturnUrl(): string
     {
         $requestUri = $this->superglobals->server['REQUEST_URI'] ?? null;
         if (!is_string($requestUri)) {

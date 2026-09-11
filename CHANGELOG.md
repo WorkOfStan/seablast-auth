@@ -19,9 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
-## [0.2.1] - 2026-08-30
+## [0.2.1] - 2026-09-13
 
 fix!: Enforce `NOT NULL` for required database columns
+
+### Changed
+
+- allow protected scope to `$configuration`, `$superglobals` and `getCurrentReturnUrl()` in UserModel, so that a child class (in an app) can access it
 
 ### Fixed
 

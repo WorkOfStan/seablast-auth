@@ -28,6 +28,12 @@ feat: Redirect successful Remember Me logins to the originally requested URL.
 - ci(blast.sh): bump to 0.2.18
 - Redirect successful Remember Me logins to the originally requested URL.
 
+### Security
+
+- Temporarily allow `GHSA-vjqc-q4mp-2rvf` / `CVE-2026-79752` for `cakephp/database` to retain PHP 7.2 and 7.3 compatibility.
+  - The vulnerability affects several `FunctionsBuilder` methods when user-controlled values are passed to SQL function parameters.
+  - This exception should be removed once CakePHP provides a patched release compatible with PHP 7.2 and 7.3, or when PHP is upgraded to a version supported by the currently patched CakePHP releases.
+
 ## [0.2.1] - 2026-09-13
 
 fix!: Enforce `NOT NULL` for required database columns

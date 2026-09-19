@@ -19,11 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
-## [0.2.2] - 2026-09-DD
+## [0.2.2] - 2026-09-20
+
+feat: Redirect successful Remember Me logins to the originally requested URL.
 
 ### Changed
 
 - ci(blast.sh): bump to 0.2.18
+- Redirect successful Remember Me logins to the originally requested URL.
 
 ## [0.2.1] - 2026-09-13
 

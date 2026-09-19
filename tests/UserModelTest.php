@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
+use Seablast\Auth\AuthConstant;
 use Seablast\Auth\IdentityManager;
 use Seablast\Auth\UserModel;
 use Seablast\Seablast\SeablastConfiguration;
@@ -132,6 +133,104 @@ class UserModelTest extends TestCase
         $this->assertTrue($result->showLogin);
         $this->assertSame('Invalid token.', $result->message);
         $this->assertFalse(isset($result->redirectionUrl));
+    }
+
+    public function testRememberMeRedirectsToCurrentRequestWithSeeOther(): void
+    {
+        $targets = [
+            '/app/private/report?filter=open&page=2&tag[]=a&tag[]=b&returnUrl=/other' =>
+                '/private/report?filter=open&page=2&tag%5B0%5D=a&tag%5B1%5D=b',
+            '/app/user/' => '/user',
+            '/app' => '/',
+        ];
+        foreach ($targets as $requestUri => $target) {
+            $model = $this->createRememberMeModel(['REQUEST_URI' => $requestUri]);
+
+            $result = $model->knowledge();
+
+            $this->assertSame('https://example.test/app' . $target, $result->redirectionUrl);
+            $this->assertSame(303, $result->httpCode);
+        }
+    }
+
+    public function testRememberMeSupportsApplicationAtDomainRoot(): void
+    {
+        $model = $this->createRememberMeModel(['REQUEST_URI' => '/private/report?filter=open']);
+        $configuration = new SeablastConfiguration();
+        $configuration->setString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL, 'https://example.test/');
+        $configuration->flag->activate(AuthConstant::FLAG_REMEMBER_ME_COOKIE);
+        $this->setPrivateProperty($model, 'configuration', $configuration);
+
+        $result = $model->knowledge();
+
+        $this->assertSame('https://example.test/private/report?filter=open', $result->redirectionUrl);
+        $this->assertSame(303, $result->httpCode);
+    }
+
+    public function testRememberMeUnsafeOrMissingRequestFallsBackToConfiguredUserRoute(): void
+    {
+        $requests = [
+            [],
+            ['REQUEST_URI' => ['/app/private']],
+            ['REQUEST_URI' => 'https://attacker.test/private'],
+            ['REQUEST_URI' => '//attacker.test/private'],
+            ['REQUEST_URI' => '/outside/private'],
+            ['REQUEST_URI' => '/application/private'],
+            ['REQUEST_URI' => '/app/%252e%252e/private'],
+            ['REQUEST_URI' => '/app/%5cattacker.test'],
+            ['REQUEST_URI' => '/app/%00private'],
+        ];
+        foreach ($requests as $server) {
+            $model = $this->createRememberMeModel($server);
+            $this->setPrivateProperty($model, 'userRoute', '/account');
+
+            $result = $model->knowledge();
+
+            $this->assertSame('https://example.test/app/account', $result->redirectionUrl);
+            $this->assertSame(303, $result->httpCode);
+        }
+    }
+
+    public function testInvalidOrDisabledRememberMeDoesNotRedirect(): void
+    {
+        foreach ([true, false] as $enabled) {
+            $model = $this->createRememberMeModel(['REQUEST_URI' => '/app/private'], $enabled, false);
+
+            $result = $model->knowledge();
+
+            $this->assertTrue($result->showLogin);
+            $this->assertFalse($result->showLogout);
+            $this->assertFalse(isset($result->redirectionUrl));
+        }
+    }
+
+    /**
+     * @param mixed[] $server
+     * @param bool $enabled
+     * @param bool $remembered
+     * @return UserModel
+     */
+    private function createRememberMeModel(
+        array $server,
+        bool $enabled = true,
+        bool $remembered = true
+    ): UserModel {
+        $identity = $this->getMockBuilder(IdentityManager::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['isAuthenticated', 'isTokenValid', 'doYouRememberMe'])
+            ->getMock();
+        $identity->expects($this->once())->method('isAuthenticated')->willReturn(false);
+        $identity->expects($this->never())->method('isTokenValid');
+        $identity->expects($enabled ? $this->once() : $this->never())
+            ->method('doYouRememberMe')->willReturn($remembered);
+        $model = $this->createModel([], ['REQUEST_METHOD' => 'GET'] + $server, $identity);
+        $configuration = new SeablastConfiguration();
+        $configuration->setString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL, 'https://example.test/app');
+        if ($enabled) {
+            $configuration->flag->activate(AuthConstant::FLAG_REMEMBER_ME_COOKIE);
+        }
+        $this->setPrivateProperty($model, 'configuration', $configuration);
+        return $model;
     }
 
     /**

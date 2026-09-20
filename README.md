@@ -61,6 +61,19 @@ Membership expiration is evaluated using the start of the current hour. A `valid
 therefore remains effective until the next whole hour, while a value exactly on an hour boundary expires at that
 boundary. The activation token's own `valid_from` and `valid_to` window remains exact.
 
+### Authentication time limits
+
+| Limit | Duration | Behavior |
+| --- | --- | --- |
+| Session authentication token | Approximately 1 day of inactivity (nominally 86,400 seconds and effectively up to just under 25 hours) | Validation uses an hourly boundary, and activity refreshes the stored timestamp after more than 5 minutes. |
+| Remember Me | 30 days (2,592,000 seconds) | A successful automatic login rotates the token and restarts the 30-day period. |
+| Login-email resend cooldown | 120 seconds | Repeated requests for the same email address are suppressed during this period. |
+
+The PHP session can end sooner according to `session.cookie_lifetime` or `session.gc_maxlifetime` in the consuming
+application. Suppressed login-email requests return the same generic confirmation as accepted requests so that the
+response does not reveal internal request state. The cooldown is a per-address safeguard only; consuming applications
+should add per-IP and global rate limiting at the application, reverse-proxy, or edge layer.
+
 ### Cookies
 
 IdentityManager expects cookie scope being set already by:
@@ -94,11 +107,6 @@ but if you want to customize it, configure path to your own template within your
             ]
         )
 ```
-
-The bundled `UserModel` applies a 120-second cooldown to repeated login-email requests for the same address.
-Suppressed requests return the same generic confirmation as accepted requests so that the response does not reveal
-internal request state. This is a per-address safeguard only; consuming applications should add per-IP and global
-rate limiting at the application, reverse-proxy, or edge layer.
 
 Email login links carry the originally requested app-relative path and query string in a URL-encoded `returnUrl`
 parameter. After a successful one-time-token login, `UserModel` redirects back to that same-app target. Missing or

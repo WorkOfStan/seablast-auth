@@ -27,6 +27,7 @@ feat: Redirect successful Remember Me logins to the originally requested URL.
 
 - ci(blast.sh): bump to 0.2.18
 - Redirect successful Remember Me logins to the originally requested URL.
+- docs: Document authentication session, Remember Me, and login-email resend time limits.
 
 ### Security
 

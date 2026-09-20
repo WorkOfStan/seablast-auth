@@ -32,7 +32,18 @@
   "minimum-stability": "stable",
   "prefer-stable": true,
   "config": {
-    "sort-packages": true
+    "sort-packages": true,
+    "policy": {
+      "advisories": {
+        "ignore-id": {
+          "GHSA-vjqc-q4mp-2rvf": {
+            "on-block": true,
+            "on-audit": false,
+            "reason": "Temporary exception for PHP 7.2 and 7.3 compatibility. Remove when CakePHP provides a patched PHP 7.3-compatible release."
+          }
+        }
+      }
+    }
   },
   "autoload": {
     "psr-4": {

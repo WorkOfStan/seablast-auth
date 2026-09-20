@@ -19,6 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+## [0.2.2] - 2026-09-20
+
+feat: Redirect successful Remember Me logins to the originally requested URL.
+
+### Changed
+
+- ci(blast.sh): bump to 0.2.18
+- Redirect successful Remember Me logins to the originally requested URL.
+- docs: Document authentication session, Remember Me, and login-email resend time limits.
+
+### Security
+
+- Temporarily allow `GHSA-vjqc-q4mp-2rvf` / `CVE-2026-79752` for `cakephp/database` to retain PHP 7.2 and 7.3 compatibility.
+  - The vulnerability affects several `FunctionsBuilder` methods when user-controlled values are passed to SQL function parameters.
+  - This exception should be removed once CakePHP provides a patched release compatible with PHP 7.2 and 7.3, or when PHP is upgraded to a version supported by the currently patched CakePHP releases.
+
 ## [0.2.1] - 2026-09-13
 
 fix!: Enforce `NOT NULL` for required database columns
@@ -228,7 +244,8 @@ feat: IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...v0.2.0
 [0.1.10]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.9...v0.1.10

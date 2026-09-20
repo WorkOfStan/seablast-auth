@@ -121,9 +121,11 @@ class UserModel implements SeablastModelInterface
                 )
             ) {
                 Debugger::barDump('Auto-relogin.');
-                return (object) [// exactly the same as with valid token
+                return (object) [// Refresh after login as with a valid token, using the current request as the target.
                         'redirectionUrl' =>
-                        $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL) . $this->userRoute,
+                        rtrim($this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL), '/')
+                        . $this->getCurrentReturnUrl(),
+                        'httpCode' => 303,
                 ];
             }
             // First visit

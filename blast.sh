@@ -1,6 +1,6 @@
 #!/bin/bash
 # blast.sh - Management script for deployment and development of a Seablast application
-# Seablast:v0.2.17.3
+# Seablast:v0.2.18
 # Fail fast on real script errors:
 # -e: stop on unexpected non-zero exit codes
 # -u: treat unset variables as errors, which makes argument handling stricter
@@ -63,11 +63,8 @@ setup_environment() {
 	[ ${#paths[@]} -eq 0 ] && paths=("${DEFAULT_PATHS[@]}") # If no paths given, use defaults
 
 	local has_curl=false
-	if command -v curl &>/dev/null; then
-		has_curl=true
-	else
-		display_warning "Warning: curl is not installed, so security of folders cannot be tested."
-	fi
+	command -v curl &>/dev/null && has_curl=true
+	$has_curl || display_warning "Warning: curl is not installed, so security of folders cannot be tested."
 	for folder in "${paths[@]}"; do
 		[ ! -d "$folder" ] && mkdir -p "$folder" && display_header "Created missing folder: $folder"
 		$has_curl && check_web_inaccessibility "/$folder/"
@@ -100,14 +97,15 @@ assemble() {
 	display_header "-- Updating Composer dependencies --"
 	composer update -a --prefer-dist --no-progress
 
-	display_header "-- Running database migrations --"
-	vendor/bin/phinx migrate -e development --configuration ./conf/phinx.local.php
 	display_header "-- Running database TESTING migrations --"
 	# In order to properly unit test all features, set-up a test database, put its
 	# credentials to the testing section of the phinx configuration file and run
 	# phinx migrate -e testing before phpunit.
 	# Drop tables in the testing database if changes were made to migrations.
 	vendor/bin/phinx migrate -e testing --configuration ./conf/phinx.local.php
+
+	display_header "-- Running database migrations --"
+	vendor/bin/phinx migrate -e development --configuration ./conf/phinx.local.php
 
 	run_phpunit
 }
@@ -179,15 +177,13 @@ phpstan_remove() {
 # Self-update function: checks for an updated version of this script and overrides itself if found
 self_update() {
 	local update_file="./vendor/seablast/seablast/blast.sh"
-	if [ -f "$update_file" ]; then
-		if [ "$update_file" -nt "$0" ]; then
-			cp "$update_file" "$0"
-			display_header "Self-update successful: Updated to the newer version from $update_file"
-		else
-			display_warning "Self-update: Update file found, but it is not newer than the current version."
-		fi
-	else
+	if [ ! -f "$update_file" ]; then
 		display_warning "Self-update: Update file not found at $update_file"
+	elif [ "$update_file" -nt "$0" ]; then
+		cp "$update_file" "$0"
+		display_header "Self-update successful: Updated to the newer version from $update_file"
+	else
+		display_warning "Self-update: Update file found, but it is not newer than the current version."
 	fi
 }
 
@@ -215,9 +211,7 @@ fi
 
 # Handle command-line parameters
 case "${1-}" in
-clean)
-	clean_temp_files
-	;;
+clean) clean_temp_files ;;
 main)
 	printf "Switches your working tree to the specified branch: main. Git will then fetch from origin (showing you a verbose progress report), bringing in all branches and tags, deleting any remote-tracking branches that have been removed on the server, and then merge (not rebase) the corresponding remote branch into your current branch.\n"
 	read -r -n1 -p "Continue? [y/N] " reply
@@ -228,18 +222,10 @@ main)
 	}
 	back_to_main
 	;;
-phpstan)
-	run_phpstan "--memory-limit 350M"
-	;;
-phpstan-pro)
-	run_phpstan "--memory-limit 350M --pro"
-	;;
-phpstan-remove)
-	phpstan_remove
-	;;
-self-update)
-	self_update
-	;;
+phpstan) run_phpstan "--memory-limit 350M" ;;
+phpstan-pro) run_phpstan "--memory-limit 350M --pro" ;;
+phpstan-remove) phpstan_remove ;;
+self-update) self_update ;;
 *)
 	display_warning "Unknown option: ${1-}"
 	print_usage

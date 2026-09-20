@@ -362,6 +362,10 @@ class IdentityManager implements IdentityManagerInterface
     public function isAuthenticated(): bool
     {
         $sessionId = $_SESSION['sbSessionToken'] ?? null;
+        // The authentication token expires after approximately one day of inactivity
+        // (default #2 parameter of getUserForSessionId method is 1 day),
+        // but the PHP session may end sooner due to its cookie lifetime or garbage collection
+        // (limited by session.gc_maxlifetime which is set by SeablastConstant::SB_SESSION_SET_COOKIE_LIFETIME).
         $userId = is_string($sessionId) ? $this->getUserForSessionId($sessionId) : null;
 
         if ($userId === null) {

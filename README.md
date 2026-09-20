@@ -61,6 +61,34 @@ Membership expiration is evaluated using the start of the current hour. A `valid
 therefore remains effective until the next whole hour, while a value exactly on an hour boundary expires at that
 boundary. The activation token's own `valid_from` and `valid_to` window remains exact.
 
+### Authentication time limits
+
+Seablast starts the PHP session before the authentication models run. A successful email-token or social login
+therefore adds a newly generated token to the existing `$_SESSION['sbSessionToken']` and stores only its hash in
+`session_user`; Seablast Auth does not create the PHP session cookie itself.
+
+| Limit                        | Duration                                                                                               | Behavior                                                                                                                                                                                                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PHP session cookie           | 3 hours (10,800 seconds) by default                                                                    | This is an absolute lifetime from when the cookie is issued, not an inactivity timeout. `SB_SESSION_SET_COOKIE_PARAMS_LIFETIME` controls it; ordinary requests reapply the cookie parameters but do not refresh the expiration time of an existing cookie (TODO: consider `session_regenerate_id()`). |
+| Session authentication token | Approximately 1 day of inactivity (nominally 86,400 seconds and effectively up to just under 25 hours) | The unhashed token exists only in the PHP session, while its hash is stored in `session_user`. Validation uses an hourly boundary, and activity refreshes the database timestamp after more than 5 minutes.                                                                                           |
+| Remember Me                  | 30 days (2,592,000 seconds)                                                                            | Over HTTPS, a successful email-token or social login creates this cookie when enabled. A successful automatic login rotates the token and restarts the 30-day period.                                                                                                                                 |
+| Login-email resend cooldown  | 120 seconds                                                                                            | Repeated requests for the same email address are suppressed during this period.                                                                                                                                                                                                                       |
+
+With the Seablast defaults, `SB_SESSION_SET_COOKIE_LIFETIME` is 48 hours and makes `session.gc_maxlifetime` twice that
+value (96 hours). It does not make the browser cookie last 48 hours because the more specific
+`SB_SESSION_SET_COOKIE_PARAMS_LIFETIME` takes precedence and sets the cookie lifetime to 3 hours. The server-side PHP
+session data and the database token may therefore remain after the browser has stopped sending the cookie.
+
+Once the PHP session cookie expires, `isAuthenticated()` cannot access `$_SESSION['sbSessionToken']`, regardless of
+whether its hash in `session_user` is still within the 1-day validity window. The bundled `UserModel` can then use a
+valid `sbRememberMe` cookie to populate the new PHP session with a new authentication token and redirect the user back
+to the requested URL. `isAuthenticated()` does not perform this automatic login itself. Without a valid Remember Me
+cookie, the user must log in again.
+
+Suppressed login-email requests return the same generic confirmation as accepted requests so that the response does
+not reveal internal request state. The cooldown is a per-address safeguard only; consuming applications should add
+per-IP and global rate limiting at the application, reverse-proxy, or edge layer.
+
 ### Cookies
 
 IdentityManager expects cookie scope being set already by:
@@ -94,11 +122,6 @@ but if you want to customize it, configure path to your own template within your
             ]
         )
 ```
-
-The bundled `UserModel` applies a 120-second cooldown to repeated login-email requests for the same address.
-Suppressed requests return the same generic confirmation as accepted requests so that the response does not reveal
-internal request state. This is a per-address safeguard only; consuming applications should add per-IP and global
-rate limiting at the application, reverse-proxy, or edge layer.
 
 Email login links carry the originally requested app-relative path and query string in a URL-encoded `returnUrl`
 parameter. After a successful one-time-token login, `UserModel` redirects back to that same-app target. Missing or
@@ -208,3 +231,6 @@ Run `.\vendor\bin\phpunit` on Windows for essential PHPUnit tests. From Git Bash
 - 251227, success email token login/logout page
 - 251227, define also (social login) logout page
 - 260707, before this update, social login didn't set users.last_login , so these accounts were protected before deletion by "remove never-logged-in users older than 15 minute" because the session_user is not pruned, yet. Sometimes after this update, start to carefully prune also the session_user table.
+  - 260920, IdentityManager::createSessionId() creates two rows (session and RememberMe) with updated timestamp
+    - so without way to say how long it's valid or to what it belongs, so no way to prune it
+    - maybe prune after the longest period passed?

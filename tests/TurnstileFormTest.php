@@ -49,7 +49,8 @@ class TurnstileFormTest extends TestCase
                 // login creates the user and token; rejected requests must never reach it or mail delivery.
                 $identity->expects($this->never())->method('login');
                 $model = (new ReflectionClass(UserModel::class))->newInstanceWithoutConstructor();
-                foreach ([
+                foreach (
+                    [
                     'configuration' => new SeablastConfiguration(),
                     'superglobals' => new Superglobals([], [
                         'email' => $email,
@@ -58,7 +59,8 @@ class TurnstileFormTest extends TestCase
                     ], ['REQUEST_METHOD' => 'POST']),
                     'turnstileVerifier' => $verifier,
                     'user' => $identity,
-                ] as $name => $value) {
+                    ] as $name => $value
+                ) {
                     $property = new ReflectionProperty(UserModel::class, $name);
                     $property->setAccessible(true);
                     $property->setValue($model, $value);
@@ -86,7 +88,8 @@ class TurnstileFormTest extends TestCase
         $identity->expects($this->once())->method('login')->with('user@example.test')->willReturn('email-token');
         $identity->method('isNewUser')->willReturn(false);
         $model = (new ReflectionClass(UserModel::class))->newInstanceWithoutConstructor();
-        foreach ([
+        foreach (
+            [
             'configuration' => $configuration,
             'superglobals' => new Superglobals([], [
                 'email' => 'user@example.test',
@@ -96,7 +99,8 @@ class TurnstileFormTest extends TestCase
             'turnstileVerifier' => $verifier,
             'user' => $identity,
             'userRoute' => '/user',
-        ] as $name => $value) {
+            ] as $name => $value
+        ) {
             $property = new ReflectionProperty(UserModel::class, $name);
             $property->setAccessible(true);
             $property->setValue($model, $value);

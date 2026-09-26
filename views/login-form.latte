@@ -1,8 +1,15 @@
 <div n:if="$showLogin">
+    {var $turnstileEnabled = $configuration->exists('AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY')
+        && $configuration->exists('AuthApp:CLOUDFLARE_TURNSTILE_SECRET_KEY')
+        && trim($configuration->getString('AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY')) !== ''
+        && trim($configuration->getString('AuthApp:CLOUDFLARE_TURNSTILE_SECRET_KEY')) !== ''}
+    <script n:if="$turnstileEnabled" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     {* Show form with email and CSRF *}
     <form method="POST">
         <input type="email" name="email" placeholder="vas@email.cz" autofocus="true"/>
         <input type="hidden" value="{$csrfToken}" name="csrfToken"/>
+        <div n:if="$turnstileEnabled" class="cf-turnstile" data-action="login_email"
+            data-sitekey="{=trim($configuration->getString('AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY'))}"></div>
         <input type="submit" value="Ok">
     </form>
 </div>

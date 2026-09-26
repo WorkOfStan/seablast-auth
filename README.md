@@ -217,6 +217,44 @@ return static function (SeablastConfiguration $SBConfig): void {
 The default SMTP host is already `localhost`. Start Mailpit, request a login email, then open its web interface and
 follow the captured login link. Keep this mail-catching configuration local; do not use it in production.
 
+## Cloudflare Turnstile
+
+The bundled registration/login form supports an existing Managed Turnstile widget.
+Configure these strings in the consuming application's private configuration:
+
+```php
+$configuration
+    ->setString(AuthConstant::CLOUDFLARE_TURNSTILE_SITE_KEY, 'YOUR_PUBLIC_SITE_KEY')
+    ->setString(AuthConstant::CLOUDFLARE_TURNSTILE_SECRET_KEY, 'YOUR_PRIVATE_SECRET_KEY')
+    ->setString(AuthConstant::CLOUDFLARE_TURNSTILE_HOSTNAMES, 'example.com,www.example.com');
+```
+
+Import `Seablast\Auth\AuthConstant`. Both keys must be nonempty to enable protection;
+missing either key preserves the existing behavior. With protection enabled, an empty
+hostname list rejects all requests. List exact frontend hostnames without schemes,
+ports or paths, and configure the widget's allowed domains in Cloudflare as well.
+Use a deployment-specific list: production must not include localhost or 127.0.0.1.
+Keep the secret out of source control, HTML and logs. The public site key belongs to
+the consuming application, not this library's defaults.
+
+Verification runs after email and CSRF validation, before registration, token creation
+or mail delivery. Cloudflare must return boolean success, action `login_email`, and
+an allowed hostname. Network failures also reject the request. The existing 120-second
+email resend limit remains in effect. Email-link login, Remember Me and social login
+are unaffected. Direct calls to `IdentityManager::login()` are not protected by this gate.
+
+Custom forms must load `https://challenges.cloudflare.com/turnstile/v0/api.js`, include
+`<div class="cf-turnstile" data-sitekey="YOUR_PUBLIC_SITE_KEY" data-action="login_email"></div>`
+inside the form and submit `cf-turnstile-response` along with email and CSRF to `UserModel`.
+Custom handlers must apply equivalent verification before their own side effects.
+If CSP is enabled, allow `https://challenges.cloudflare.com` in `script-src` and `frame-src`.
+The bundled native form reloads after submission; custom AJAX forms must reset their
+widget after each attempt, since tokens are single-use and expire after five minutes.
+
+Before production rollout, test one real successful submission on an allowed hostname,
+then replay the same token and confirm no second email or registration occurs.
+See [Cloudflare validation documentation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/).
+
 ## Testing
 
 Run `.\vendor\bin\phpunit` on Windows for essential PHPUnit tests. From Git Bash, [./test.sh](./test.sh) also prepares the testing database migration before running PHPUnit.

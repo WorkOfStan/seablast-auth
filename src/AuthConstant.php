@@ -10,6 +10,12 @@ namespace Seablast\Auth;
  */
 class AuthConstant
 {
+    /** @var string Comma-separated exact frontend hostnames allowed for this deployment */
+    public const CLOUDFLARE_TURNSTILE_HOSTNAMES = 'AuthApp:CLOUDFLARE_TURNSTILE_HOSTNAMES';
+    /** @var string Private Cloudflare Turnstile secret key */
+    public const CLOUDFLARE_TURNSTILE_SECRET_KEY = 'AuthApp:CLOUDFLARE_TURNSTILE_SECRET_KEY';
+    /** @var string Public Cloudflare Turnstile site key */
+    public const CLOUDFLARE_TURNSTILE_SITE_KEY = 'AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY';
     /**
      * @var string Facebook App ID
      */

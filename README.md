@@ -248,7 +248,7 @@ Custom forms must load `https://challenges.cloudflare.com/turnstile/v0/api.js`, 
 inside the form and submit `cf-turnstile-response` along with email and CSRF to `UserModel`.
 Custom handlers must apply equivalent verification before their own side effects.
 If CSP is enabled, allow `https://challenges.cloudflare.com` in `script-src` and `frame-src`.
-The bundled native form reloads after submission; custom AJAX forms must reset their
+The bundled native form reloads after submission; custom Ajax forms must reset their
 widget after each attempt, since tokens are single-use and expire after five minutes.
 
 Before production rollout, test one real successful submission on an allowed hostname,

@@ -292,6 +292,9 @@ class UserModel implements SeablastModelInterface
                 }
                 $verifier = $this->turnstileVerifier ?? new TurnstileVerifier($this->configuration);
                 $turnstileToken = $this->superglobals->post['cf-turnstile-response'] ?? null;
+                if ($verifier->isEnabled() && !is_string($turnstileToken)) {
+                    Debugger::log('Turnstile verification rejected: missing_or_non_string_token', ILogger::DEBUG);
+                }
                 if ($verifier->isEnabled() && (!is_string($turnstileToken) || !$verifier->verify($turnstileToken))) {
                     return (object) [
                         'showLogin' => true,

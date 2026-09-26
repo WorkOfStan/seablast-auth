@@ -8,6 +8,8 @@ use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use Seablast\Seablast\SeablastConfiguration;
+use Tracy\Debugger;
+use Tracy\ILogger;
 
 class TurnstileVerifier
 {
@@ -27,6 +29,12 @@ class TurnstileVerifier
         return $this->configuration->exists($key) ? trim($this->configuration->getString($key)) : '';
     }
 
+    private function deny(string $reason): bool
+    {
+        Debugger::log('Turnstile verification rejected: ' . $reason, ILogger::DEBUG);
+        return false;
+    }
+
     public function isEnabled(): bool
     {
         return $this->configuredString(AuthConstant::CLOUDFLARE_TURNSTILE_SITE_KEY) !== ''
@@ -42,8 +50,14 @@ class TurnstileVerifier
             'trim',
             explode(',', $this->configuredString(AuthConstant::CLOUDFLARE_TURNSTILE_HOSTNAMES))
         ));
-        if (trim($token) === '' || strlen($token) > 2048 || $hostnames === []) {
-            return false;
+        if (trim($token) === '') {
+            return $this->deny('missing_or_empty_token');
+        }
+        if (strlen($token) > 2048) {
+            return $this->deny('token_too_long');
+        }
+        if ($hostnames === []) {
+            return $this->deny('empty_hostname_allowlist');
         }
         try {
             $response = $this->client->request('POST', 'https://challenges.cloudflare.com/turnstile/v0/siteverify', [
@@ -57,17 +71,39 @@ class TurnstileVerifier
                 'timeout' => 10,
             ]);
             if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
-                return false;
+                return $this->deny('http_status=' . $response->getStatusCode());
             }
             $result = json_decode((string) $response->getBody(), true);
-            return is_array($result)
-                && ($result['success'] ?? null) === true
-                && ($result['action'] ?? null) === 'login_email'
-                && is_string($result['hostname'] ?? null)
-                && in_array($result['hostname'], $hostnames, true);
+            if (!is_array($result)) {
+                return $this->deny('invalid_json_response');
+            }
+            if (($result['success'] ?? null) !== true) {
+                // Only documented codes are logged; arbitrary response values could contain sensitive data.
+                $knownCodes = [
+                    'missing-input-secret', 'invalid-input-secret', 'missing-input-response',
+                    'invalid-input-response', 'bad-request', 'timeout-or-duplicate', 'internal-error',
+                ];
+                $codes = $result['error-codes'] ?? [];
+                $safeCodes = [];
+                if (is_array($codes)) {
+                    foreach ($codes as $code) {
+                        if (is_string($code) && in_array($code, $knownCodes, true)) {
+                            $safeCodes[] = $code;
+                        }
+                    }
+                }
+                return $this->deny('success_not_true; error_codes=' . implode(',', array_unique($safeCodes)));
+            }
+            if (($result['action'] ?? null) !== 'login_email') {
+                return $this->deny('action_mismatch');
+            }
+            if (!is_string($result['hostname'] ?? null) || !in_array($result['hostname'], $hostnames, true)) {
+                return $this->deny('hostname_mismatch');
+            }
+            return true;
         } catch (GuzzleException $exception) {
             // Never log the exception: its request contains the secret and the submitted token.
-            return false;
+            return $this->deny('connection_or_request_error');
         }
     }
 }

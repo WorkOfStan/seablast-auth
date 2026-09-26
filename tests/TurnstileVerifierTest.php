@@ -12,9 +12,14 @@ use PHPUnit\Framework\TestCase;
 use Seablast\Auth\AuthConstant;
 use Seablast\Auth\TurnstileVerifier;
 use Seablast\Seablast\SeablastConfiguration;
+use Tracy\Debugger;
+use Tracy\ILogger;
 
 class TurnstileVerifierTest extends TestCase
 {
+    /** @var ILogger */
+    private $previousLogger;
+
     private function configuration(string $site = 'site', string $secret = 'secret'): SeablastConfiguration
     {
         $configuration = new SeablastConfiguration();
@@ -22,6 +27,32 @@ class TurnstileVerifierTest extends TestCase
         $configuration->setString(AuthConstant::CLOUDFLARE_TURNSTILE_SECRET_KEY, $secret);
         $configuration->setString(AuthConstant::CLOUDFLARE_TURNSTILE_HOSTNAMES, ' example.test, www.example.test ');
         return $configuration;
+    }
+
+    protected function setUp(): void
+    {
+        $this->previousLogger = Debugger::getLogger();
+        Debugger::setLogger($this->createMock(ILogger::class));
+    }
+
+    protected function tearDown(): void
+    {
+        Debugger::setLogger($this->previousLogger);
+    }
+
+    public function testDebugLogOnlyContainsRecognizedErrorCodes(): void
+    {
+        $logger = $this->createMock(ILogger::class);
+        $logger->expects($this->once())->method('log')->with(
+            'Turnstile verification rejected: success_not_true; error_codes=timeout-or-duplicate',
+            ILogger::DEBUG
+        );
+        Debugger::setLogger($logger);
+        $client = $this->createMock(ClientInterface::class);
+        $client->method('request')->willReturn(new Response(200, [],
+            '{"success":false,"error-codes":["timeout-or-duplicate","secret","token",{}]}'
+        ));
+        $this->assertFalse((new TurnstileVerifier($this->configuration(), $client))->verify('token'));
     }
 
     public function testDisabledConfigurationDoesNotCallCloudflare(): void

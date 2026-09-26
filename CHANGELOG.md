@@ -26,6 +26,7 @@ feat: Add optional Cloudflare Turnstile verification before sending email
 ### Added
 
 - Add optional Cloudflare Turnstile verification before registration and login email requests.
+- Add safe DEBUG diagnostics for rejected Turnstile verification without logging secrets or tokens.
 
 ## [0.2.2] - 2026-09-20
 

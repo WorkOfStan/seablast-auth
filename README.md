@@ -255,6 +255,13 @@ Before production rollout, test one real successful submission on an allowed hos
 then replay the same token and confirm no second email or registration occurs.
 See [Cloudflare validation documentation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/).
 
+Turnstile failures are logged through Tracy at DEBUG level with the prefix
+`Turnstile verification rejected:`. Reasons distinguish missing/invalid input,
+an empty hostname allowlist, HTTP status, invalid JSON, rejected verification
+(with recognized Cloudflare error codes), action/hostname mismatch and transport errors.
+Use the application's configured Tracy logger destination (normally `debug.log` with
+Tracy's file logger). Tokens, secret keys, raw responses and exception messages are never logged.
+
 ## Testing
 
 Run `.\vendor\bin\phpunit` on Windows for essential PHPUnit tests. From Git Bash, [./test.sh](./test.sh) also prepares the testing database migration before running PHPUnit.

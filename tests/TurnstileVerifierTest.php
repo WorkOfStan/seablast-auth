@@ -49,7 +49,9 @@ class TurnstileVerifierTest extends TestCase
         );
         Debugger::setLogger($logger);
         $client = $this->createMock(ClientInterface::class);
-        $client->method('request')->willReturn(new Response(200, [],
+        $client->method('request')->willReturn(new Response(
+            200,
+            [],
             '{"success":false,"error-codes":["timeout-or-duplicate","secret","token",{}]}'
         ));
         $this->assertFalse((new TurnstileVerifier($this->configuration(), $client))->verify('token'));

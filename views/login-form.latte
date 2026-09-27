@@ -1,11 +1,19 @@
 <div n:if="$showLogin">
+    {* todo consider invoking Turnstile only in the case of providing email, not when social login would be used *}
+    {var $turnstileEnabled = $configuration->exists('AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY')
+        && $configuration->exists('AuthApp:CLOUDFLARE_TURNSTILE_SECRET_KEY')
+        && trim($configuration->getString('AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY')) !== ''
+        && trim($configuration->getString('AuthApp:CLOUDFLARE_TURNSTILE_SECRET_KEY')) !== ''}
+    <script n:if="$turnstileEnabled" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     {* Show form with email and CSRF *}
     <form method="POST">
         <input type="email" name="email" placeholder="vas@email.cz" autofocus="true"/>
         <input type="hidden" value="{$csrfToken}" name="csrfToken"/>
+        <div n:if="$turnstileEnabled" class="cf-turnstile" data-action="login_email"
+            data-sitekey="{=trim($configuration->getString('AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY'))}"></div>
         <input type="submit" value="Ok">
     </form>
 </div>
 {* class="g_id_signout" should prevent an automatic One Tap relogin *}
-<p n:if="$showLogout"><a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/?logout" class="g_id_signout" rel="nofollow">Logout</a></p>
+<p n:if="$showLogout"><a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/?logout" class="g_id_signout" rel="nofollow">{="Odhlásit"|translate}{* todo Logout in English *}</a></p>
 <p n:if="$message">{$message}</p>

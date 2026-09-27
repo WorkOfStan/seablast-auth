@@ -38,6 +38,8 @@ class UserModel implements SeablastModelInterface
     protected $configuration;
     /** @var Superglobals */
     protected $superglobals;
+    /** @var TurnstileVerifier|null */
+    private $turnstileVerifier;
     /** @var IdentityManager */
     private $user;
     /** @var string Route to the user log-in/log-out page */
@@ -47,9 +49,18 @@ class UserModel implements SeablastModelInterface
      *
      * @param SeablastConfiguration $configuration
      * @param Superglobals $superglobals
+     * The optional verifier overrides the instance used by knowledge() for email-login verification.
+     * No bundled caller passes this argument; TurnstileFormTest injects a mock into the property via reflection.
+     * Consumers can inject a verifier with a custom HTTP client; null creates one from the configuration.
+     *
+     * @param TurnstileVerifier|null $turnstileVerifier Optional verifier override.
      */
-    public function __construct(SeablastConfiguration $configuration, Superglobals $superglobals)
-    {
+    public function __construct(
+        SeablastConfiguration $configuration,
+        Superglobals $superglobals,
+        ?TurnstileVerifier $turnstileVerifier = null
+    ) {
+        $this->turnstileVerifier = $turnstileVerifier;
         $this->configuration = $configuration;
         $this->superglobals = $superglobals;
         $this->userRoute = $this->configuration->getString(AuthConstant::USER_ROUTE);
@@ -61,6 +72,133 @@ class UserModel implements SeablastModelInterface
         $this->user->setRememberMeCookieEnabled(
             $this->configuration->flag->status(AuthConstant::FLAG_REMEMBER_ME_COOKIE)
         );
+    }
+
+    /**
+     * Builds an email login URL carrying a safe, app-relative return target.
+     *
+     * @param string $token
+     * @return string
+     */
+    private function buildLoginUrl(string $token): string
+    {
+        $query = [
+            self::TOKEN_PARAMETER => $token,
+            self::RETURN_URL_PARAMETER => $this->getCurrentReturnUrl(),
+        ];
+        return $this->getAbsoluteUserUrl() . '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    /**
+     * Returns the absolute user URL, optionally with the conventional trailing slash used by login links.
+     *
+     * @param bool $trailingSlash
+     * @return string
+     */
+    private function getAbsoluteUserUrl(bool $trailingSlash = true): string
+    {
+        $userUrl = rtrim($this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL), '/')
+            . $this->getUserRoute();
+        return $trailingSlash && $this->getUserRoute() !== '/' ? $userUrl . '/' : $userUrl;
+    }
+
+    /**
+     * Derives an app-relative return target from the current request URI.
+     * It's protected so that it can be used by child class in an app.
+     *
+     * @return string
+     */
+    protected function getCurrentReturnUrl(): string
+    {
+        $requestUri = $this->superglobals->server['REQUEST_URI'] ?? null;
+        if (!is_string($requestUri)) {
+            return $this->getUserRoute();
+        }
+        $requestParts = parse_url($requestUri);
+        if (
+            $requestParts === false ||
+            isset($requestParts['scheme']) ||
+            isset($requestParts['host']) ||
+            isset($requestParts['user']) ||
+            isset($requestParts['pass']) ||
+            !isset($requestParts['path'])
+        ) {
+            return $this->getUserRoute();
+        }
+
+        $appRootUrl = $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL);
+        $appRootPath = parse_url($appRootUrl, PHP_URL_PATH);
+        if ($appRootPath === false) {
+            return $this->getUserRoute();
+        }
+        $appRootPath = rtrim($appRootPath ?? '', '/');
+        $requestPath = $requestParts['path'];
+        if ($appRootPath !== '') {
+            if ($requestPath === $appRootPath) {
+                $requestPath = '/';
+            } elseif (strpos($requestPath, $appRootPath . '/') === 0) {
+                $requestPath = substr($requestPath, strlen($appRootPath));
+            } else {
+                return $this->getUserRoute();
+            }
+        }
+
+        $returnUrl = $requestPath;
+        if (isset($requestParts['query'])) {
+            $returnUrl .= '?' . $requestParts['query'];
+        }
+        $safeReturnUrl = $this->sanitizeReturnUrl($returnUrl);
+        if ($safeReturnUrl === null) {
+            return $this->getUserRoute();
+        }
+        if ($this->getUserRoute() !== '/' && $safeReturnUrl === $this->getUserRoute() . '/') {
+            return $this->getUserRoute();
+        }
+        return $safeReturnUrl;
+    }
+
+    /**
+     * Returns the safe absolute URL to visit after a successful email-token login.
+     *
+     * @return string
+     */
+    private function getPostLoginRedirectUrl(): string
+    {
+        $returnUrl = $this->superglobals->get[self::RETURN_URL_PARAMETER] ?? null;
+        if (!is_string($returnUrl)) {
+            return $this->getAbsoluteUserUrl(false);
+        }
+        $safeReturnUrl = $this->sanitizeReturnUrl($returnUrl);
+        if ($safeReturnUrl === null) {
+            return $this->getAbsoluteUserUrl(false);
+        }
+        return rtrim($this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL), '/')
+            . $safeReturnUrl;
+    }
+
+    /**
+     * Returns the configured user route as a normalized app-relative path.
+     *
+     * @return string
+     */
+    private function getUserRoute(): string
+    {
+        $userRoute = '/' . ltrim($this->userRoute, '/');
+        return $userRoute === '/' ? '/' : rtrim($userRoute, '/');
+    }
+
+    /**
+     * Checks the CSRF token submitted through a form.
+     *
+     * @return bool
+     */
+    private function hasValidCsrfToken(): bool
+    {
+        if (!isset($this->superglobals->post['csrfToken']) || !is_string($this->superglobals->post['csrfToken'])) {
+            return false;
+        }
+        $csrfTokenManager = new CsrfTokenManager();
+        return $csrfTokenManager->isTokenValid(new CsrfToken('sb_json', $this->superglobals->post['csrfToken']));
     }
 
     /**
@@ -156,6 +294,18 @@ class UserModel implements SeablastModelInterface
                             'message' => 'Token mismatch.',
                     ];
                 }
+                $verifier = $this->turnstileVerifier ?? new TurnstileVerifier($this->configuration);
+                $turnstileToken = $this->superglobals->post['cf-turnstile-response'] ?? null;
+                if ($verifier->isEnabled() && !is_string($turnstileToken)) {
+                    Debugger::log('Turnstile verification rejected: missing_or_non_string_token', ILogger::DEBUG);
+                }
+                if ($verifier->isEnabled() && (!is_string($turnstileToken) || !$verifier->verify($turnstileToken))) {
+                    return (object) [
+                        'showLogin' => true,
+                        'showLogout' => false,
+                        'message' => 'Ověření proti spamu se nezdařilo. Zkuste to prosím znovu.',
+                    ];
+                }
                 // Assertion only for static analysis as it was already checked above with filter_var.
                 Assert::email($email);
                 if ($this->user->isLoginEmailRecentlyRequested($email)) {
@@ -183,157 +333,6 @@ class UserModel implements SeablastModelInterface
             'Wrong HTTP request: ' . (string) print_r($this->superglobals->server['REQUEST_METHOD'], true)
             . ' (or POST API call requires authentication)'
         );
-    }
-
-    /**
-     * Checks the CSRF token submitted through a form.
-     *
-     * @return bool
-     */
-    private function hasValidCsrfToken(): bool
-    {
-        if (!isset($this->superglobals->post['csrfToken']) || !is_string($this->superglobals->post['csrfToken'])) {
-            return false;
-        }
-        $csrfTokenManager = new CsrfTokenManager();
-        return $csrfTokenManager->isTokenValid(new CsrfToken('sb_json', $this->superglobals->post['csrfToken']));
-    }
-
-    /**
-     * Sends registration or login email with URL with token.
-     *
-     * URL is placed instead of %URL% in AppConstant::TEXT_EMAIL_XXX.
-     *
-     * @param string $emailAddress
-     * @param string $token
-     * @return void
-     */
-    private function sendLoginEmail(string $emailAddress, string $token): void
-    {
-        $loginUrl = $this->buildLoginUrl($token);
-        $plainText = str_replace(
-            '%URL%',
-            $loginUrl,
-            $this->configuration->getString(
-                $this->user->isNewUser() ? AuthConstant::TEXT_EMAIL_REGISTRATION : AuthConstant::TEXT_EMAIL_LOGIN
-            )
-        );
-        if (!$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)) {
-            Debugger::barDump('Sending emails is not enabled');
-            return;
-        }
-        $sender = new MailOut($this->configuration);
-        $subject = $this->configuration->getString(
-            $this->user->isNewUser() ? AuthConstant::SUBJECT_EMAIL_REGISTRATION : AuthConstant::SUBJECT_EMAIL_LOGIN
-        );
-        // Optionally prepare an HTML variant while keeping clean plaintext for clients without HTML.
-        //        $htmlBody = sprintf(
-        //            '<p>%s</p>',
-        //            htmlspecialchars(str_replace("\n", ' ', $plainText), ENT_QUOTES, 'UTF-8')
-        //        );
-        $sender->send(
-            $emailAddress,
-            $subject,
-            $plainText
-            //,
-            //    [
-            //        // 'cc'  => ['cc@example.com'],
-            //        // 'bcc' => 'audit@example.com',
-            //        'html' => $htmlBody,
-            //        // 'replyTo' => 'support@example.com',
-            //        // 'priority' => \Symfony\Component\Mime\Email::PRIORITY_NORMAL,
-            //    ]
-        );
-        Debugger::barDump($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS), 'Email sent from');
-    }
-
-    /**
-     * Builds an email login URL carrying a safe, app-relative return target.
-     *
-     * @param string $token
-     * @return string
-     */
-    private function buildLoginUrl(string $token): string
-    {
-        $query = [
-            self::TOKEN_PARAMETER => $token,
-            self::RETURN_URL_PARAMETER => $this->getCurrentReturnUrl(),
-        ];
-        return $this->getAbsoluteUserUrl() . '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
-    }
-
-    /**
-     * Returns the safe absolute URL to visit after a successful email-token login.
-     *
-     * @return string
-     */
-    private function getPostLoginRedirectUrl(): string
-    {
-        $returnUrl = $this->superglobals->get[self::RETURN_URL_PARAMETER] ?? null;
-        if (!is_string($returnUrl)) {
-            return $this->getAbsoluteUserUrl(false);
-        }
-        $safeReturnUrl = $this->sanitizeReturnUrl($returnUrl);
-        if ($safeReturnUrl === null) {
-            return $this->getAbsoluteUserUrl(false);
-        }
-        return rtrim($this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL), '/')
-            . $safeReturnUrl;
-    }
-
-    /**
-     * Derives an app-relative return target from the current request URI.
-     * It's protected so that it can be used by child class in an app.
-     *
-     * @return string
-     */
-    protected function getCurrentReturnUrl(): string
-    {
-        $requestUri = $this->superglobals->server['REQUEST_URI'] ?? null;
-        if (!is_string($requestUri)) {
-            return $this->getUserRoute();
-        }
-        $requestParts = parse_url($requestUri);
-        if (
-            $requestParts === false ||
-            isset($requestParts['scheme']) ||
-            isset($requestParts['host']) ||
-            isset($requestParts['user']) ||
-            isset($requestParts['pass']) ||
-            !isset($requestParts['path'])
-        ) {
-            return $this->getUserRoute();
-        }
-
-        $appRootUrl = $this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL);
-        $appRootPath = parse_url($appRootUrl, PHP_URL_PATH);
-        if ($appRootPath === false) {
-            return $this->getUserRoute();
-        }
-        $appRootPath = rtrim($appRootPath ?? '', '/');
-        $requestPath = $requestParts['path'];
-        if ($appRootPath !== '') {
-            if ($requestPath === $appRootPath) {
-                $requestPath = '/';
-            } elseif (strpos($requestPath, $appRootPath . '/') === 0) {
-                $requestPath = substr($requestPath, strlen($appRootPath));
-            } else {
-                return $this->getUserRoute();
-            }
-        }
-
-        $returnUrl = $requestPath;
-        if (isset($requestParts['query'])) {
-            $returnUrl .= '?' . $requestParts['query'];
-        }
-        $safeReturnUrl = $this->sanitizeReturnUrl($returnUrl);
-        if ($safeReturnUrl === null) {
-            return $this->getUserRoute();
-        }
-        if ($this->getUserRoute() !== '/' && $safeReturnUrl === $this->getUserRoute() . '/') {
-            return $this->getUserRoute();
-        }
-        return $safeReturnUrl;
     }
 
     /**
@@ -395,26 +394,50 @@ class UserModel implements SeablastModelInterface
     }
 
     /**
-     * Returns the configured user route as a normalized app-relative path.
+     * Sends registration or login email with URL with token.
      *
-     * @return string
-     */
-    private function getUserRoute(): string
-    {
-        $userRoute = '/' . ltrim($this->userRoute, '/');
-        return $userRoute === '/' ? '/' : rtrim($userRoute, '/');
-    }
-
-    /**
-     * Returns the absolute user URL, optionally with the conventional trailing slash used by login links.
+     * URL is placed instead of %URL% in AppConstant::TEXT_EMAIL_XXX.
      *
-     * @param bool $trailingSlash
-     * @return string
+     * @param string $emailAddress
+     * @param string $token
+     * @return void
      */
-    private function getAbsoluteUserUrl(bool $trailingSlash = true): string
+    private function sendLoginEmail(string $emailAddress, string $token): void
     {
-        $userUrl = rtrim($this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL), '/')
-            . $this->getUserRoute();
-        return $trailingSlash && $this->getUserRoute() !== '/' ? $userUrl . '/' : $userUrl;
+        $loginUrl = $this->buildLoginUrl($token);
+        $plainText = str_replace(
+            '%URL%',
+            $loginUrl,
+            $this->configuration->getString(
+                $this->user->isNewUser() ? AuthConstant::TEXT_EMAIL_REGISTRATION : AuthConstant::TEXT_EMAIL_LOGIN
+            )
+        );
+        if (!$this->configuration->flag->status(SeablastConstant::USER_MAIL_ENABLED)) {
+            Debugger::barDump('Sending emails is not enabled');
+            return;
+        }
+        $sender = new MailOut($this->configuration);
+        $subject = $this->configuration->getString(
+            $this->user->isNewUser() ? AuthConstant::SUBJECT_EMAIL_REGISTRATION : AuthConstant::SUBJECT_EMAIL_LOGIN
+        );
+        // Optionally prepare an HTML variant while keeping clean plaintext for clients without HTML.
+        //        $htmlBody = sprintf(
+        //            '<p>%s</p>',
+        //            htmlspecialchars(str_replace("\n", ' ', $plainText), ENT_QUOTES, 'UTF-8')
+        //        );
+        $sender->send(
+            $emailAddress,
+            $subject,
+            $plainText
+            //,
+            //    [
+            //        // 'cc'  => ['cc@example.com'],
+            //        // 'bcc' => 'audit@example.com',
+            //        'html' => $htmlBody,
+            //        // 'replyTo' => 'support@example.com',
+            //        // 'priority' => \Symfony\Component\Mime\Email::PRIORITY_NORMAL,
+            //    ]
+        );
+        Debugger::barDump($this->configuration->getString(SeablastConstant::FROM_MAIL_ADDRESS), 'Email sent from');
     }
 }

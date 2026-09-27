@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+## [0.2.3] - 2026-09-27
+
+feat: Add optional Cloudflare Turnstile verification before sending email
+
+### Added
+
+- Add optional Cloudflare Turnstile verification before registration and login email requests.
+- Add safe DEBUG diagnostics for rejected Turnstile verification without logging secrets or tokens.
+
 ## [0.2.2] - 2026-09-20
 
 feat: Redirect successful Remember Me logins to the originally requested URL.
@@ -244,7 +253,8 @@ feat: IdentityManager and GroupManager
 
 - PHPUnit tests for invalid emails and SQL injections attempts. Also tested automatically on GitHub.
 
-[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/WorkOfStan/seablast-auth/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/WorkOfStan/seablast-auth/compare/v0.1.10...v0.2.0

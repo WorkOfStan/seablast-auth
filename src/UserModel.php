@@ -49,7 +49,11 @@ class UserModel implements SeablastModelInterface
      *
      * @param SeablastConfiguration $configuration
      * @param Superglobals $superglobals
-     * @param TurnstileVerifier|null $turnstileVerifier
+     * The optional verifier overrides the instance used by knowledge() for email-login verification.
+     * No bundled caller passes this argument; TurnstileFormTest injects a mock into the property via reflection.
+     * Consumers can inject a verifier with a custom HTTP client; null creates one from the configuration.
+     *
+     * @param TurnstileVerifier|null $turnstileVerifier Optional verifier override.
      */
     public function __construct(
         SeablastConfiguration $configuration,

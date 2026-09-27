@@ -14,5 +14,5 @@
     </form>
 </div>
 {* class="g_id_signout" should prevent an automatic One Tap relogin *}
-<p n:if="$showLogout"><a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/?logout" class="g_id_signout" rel="nofollow">Logout</a></p>
+<p n:if="$showLogout"><a href="{$configuration->getString('SB_APP_ROOT_ABSOLUTE_URL')}{$configuration->getString('AuthApp:USER_ROUTE')}/?logout" class="g_id_signout" rel="nofollow">{="Odhlásit"|translate}{* todo Logout in English *}</a></p>
 <p n:if="$message">{$message}</p>

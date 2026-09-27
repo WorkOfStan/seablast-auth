@@ -1,4 +1,5 @@
 <div n:if="$showLogin">
+    {* todo consider invoking Turnstile only in the case of providing email, not when social login would be used *}
     {var $turnstileEnabled = $configuration->exists('AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY')
         && $configuration->exists('AuthApp:CLOUDFLARE_TURNSTILE_SECRET_KEY')
         && trim($configuration->getString('AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY')) !== ''

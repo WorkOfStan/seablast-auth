@@ -219,14 +219,14 @@ follow the captured login link. Keep this mail-catching configuration local; do 
 
 ## Cloudflare Turnstile
 
-The bundled registration/login form supports an existing Managed Turnstile widget.
-Configure these strings in the consuming application's private configuration:
+To prevent spam caused by misuse of the login and registration functionality, the bundled login/registration form supports Cloudflare's Managed Turnstile widget.
+Configure the following values in the consuming application's private configuration:
 
 ```php
 $configuration
     ->setString(AuthConstant::CLOUDFLARE_TURNSTILE_SITE_KEY, 'YOUR_PUBLIC_SITE_KEY')
     ->setString(AuthConstant::CLOUDFLARE_TURNSTILE_SECRET_KEY, 'YOUR_PRIVATE_SECRET_KEY')
-    ->setString(AuthConstant::CLOUDFLARE_TURNSTILE_HOSTNAMES, 'example.com,www.example.com');
+    ->setString(AuthConstant::CLOUDFLARE_TURNSTILE_HOSTNAMES, 'localhost,example.com,www.example.com');
 ```
 
 Import `Seablast\Auth\AuthConstant`. Both keys must be nonempty to enable protection;

@@ -41,51 +41,6 @@ class ApiSocialLoginModel extends GenericRestApiJsonModel
     }
 
     /**
-     * Return the knowledge calculated in this model.
-     *
-     * @return stdClass
-     */
-    public function knowledge(): stdClass
-    {
-        /** @var \stdClass $result */
-        $result = parent::knowledge();
-        if ($result->httpCode >= 400) {
-            // Error state means that further processing is not desired
-            return $result;
-        }
-        try {
-            $this->identity = new IdentityManager($this->configuration->mysqli());
-            $this->identity->setTablePrefix($this->configuration->dbmsTablePrefix());
-            $this->identity->setCookiePath(
-                $this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH)
-            );
-            $this->identity->setRememberMeCookieEnabled(
-                $this->configuration->flag->status(AuthConstant::FLAG_REMEMBER_ME_COOKIE)
-            );
-            // Business logic starts here
-            // If logged in, log out first
-            if ($this->identity->isAuthenticated()) {
-                $this->identity->logout();
-            }
-
-            $this->executeBusinessLogic();
-            Assert::propertyExists($result, 'rest');
-            Assert::isInstanceOf($result->rest, \stdClass::class); // and `rest` is an object
-            $result->rest->message = $this->message;
-            $result->httpCode = $this->httpCode;
-            if ($this->httpCode === 200) {
-                $result->rest->success = 'ok';
-            }
-        } catch (\Exception $e) {
-            $this->httpCode = 500;
-            $this->message = 'Unexpected server error';
-            Debugger::log('ApiSocialLoginModel failed: ' . get_class($e), ILogger::ERROR);
-        }
-
-        return $result;
-    }
-
-    /**
      * Process the input by invoking partial calculations.
      *
      * @return void
@@ -132,6 +87,51 @@ class ApiSocialLoginModel extends GenericRestApiJsonModel
         }
         $payload = $this->socialProvider->authTokenToPayload($authToken);
         $this->processPayloadEmail($payload, 'Login successful - ' . $provider);
+    }
+
+    /**
+     * Return the knowledge calculated in this model.
+     *
+     * @return stdClass
+     */
+    public function knowledge(): stdClass
+    {
+        /** @var \stdClass $result */
+        $result = parent::knowledge();
+        if ($result->httpCode >= 400) {
+            // Error state means that further processing is not desired
+            return $result;
+        }
+        try {
+            $this->identity = new IdentityManager($this->configuration->mysqli());
+            $this->identity->setTablePrefix($this->configuration->dbmsTablePrefix());
+            $this->identity->setCookiePath(
+                $this->configuration->getString(SeablastConstant::SB_SESSION_SET_COOKIE_PARAMS_PATH)
+            );
+            $this->identity->setRememberMeCookieEnabled(
+                $this->configuration->flag->status(AuthConstant::FLAG_REMEMBER_ME_COOKIE)
+            );
+            // Business logic starts here
+            // If logged in, log out first
+            if ($this->identity->isAuthenticated()) {
+                $this->identity->logout();
+            }
+
+            $this->executeBusinessLogic();
+            Assert::propertyExists($result, 'rest');
+            Assert::isInstanceOf($result->rest, \stdClass::class); // and `rest` is an object
+            $result->rest->message = $this->message;
+            $result->httpCode = $this->httpCode;
+            if ($this->httpCode === 200) {
+                $result->rest->success = 'ok';
+            }
+        } catch (\Exception $e) {
+            $this->httpCode = 500;
+            $this->message = 'Unexpected server error';
+            Debugger::log('ApiSocialLoginModel failed: ' . get_class($e), ILogger::ERROR);
+        }
+
+        return $result;
     }
 
     /**

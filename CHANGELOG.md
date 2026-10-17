@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### `Security` in case of vulnerabilities
 
+## [0.2.4] - TBD
+
+### Changed
+
+- Sort PHP imports, constants, properties, and methods alphabetically without changing their implementation.
+
 ## [0.2.3] - 2026-09-27
 
 feat: Add optional Cloudflare Turnstile verification before sending email

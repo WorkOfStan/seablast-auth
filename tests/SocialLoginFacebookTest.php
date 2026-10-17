@@ -18,29 +18,23 @@ class SocialLoginFacebookTest extends TestCase
     private const FACEBOOK_APP_ID = '123456789';
     private const FACEBOOK_APP_SECRET = 'test-secret';
 
-    public function testReturnsPayloadWhenDebugTokenMatchesApp(): void
+    /**
+     * @param array<int,Response> $responses
+     * @return array{0:SocialLoginFacebook,1:MockHandler}
+     */
+    private function createModel(array $responses, bool $includeAppSecret = true): array
     {
-        list($model) = $this->createModel([
-            new Response(200, [], (string) json_encode([
-                'data' => [
-                    'is_valid' => true,
-                    'app_id' => self::FACEBOOK_APP_ID,
-                    'expires_at' => time() + 3600,
-                ],
-            ])),
-            new Response(200, [], (string) json_encode([
-                'id' => 'facebook-user-id',
-                'email' => 'user@example.com',
-            ])),
-        ]);
+        $configuration = new SeablastConfiguration();
+        $configuration->setString(AuthConstant::FACEBOOK_APP_ID, self::FACEBOOK_APP_ID);
+        $configuration->setString(AuthConstant::FACEBOOK_API_VERSION, 'v21.0');
+        if ($includeAppSecret) {
+            $configuration->setString(AuthConstant::FACEBOOK_APP_SECRET, self::FACEBOOK_APP_SECRET);
+        }
 
-        $this->assertSame(
-            [
-                'id' => 'facebook-user-id',
-                'email' => 'user@example.com',
-            ],
-            $model->authTokenToPayload('valid-access-token')
-        );
+        $mock = new MockHandler(array_values($responses));
+        $client = new Client(['handler' => HandlerStack::create($mock)]);
+
+        return [new SocialLoginFacebook($configuration, $client), $mock];
     }
 
     public function testRejectsDebugTokenForDifferentApp(): void
@@ -85,22 +79,28 @@ class SocialLoginFacebookTest extends TestCase
         $this->assertCount(0, $mock);
     }
 
-    /**
-     * @param array<int,Response> $responses
-     * @return array{0:SocialLoginFacebook,1:MockHandler}
-     */
-    private function createModel(array $responses, bool $includeAppSecret = true): array
+    public function testReturnsPayloadWhenDebugTokenMatchesApp(): void
     {
-        $configuration = new SeablastConfiguration();
-        $configuration->setString(AuthConstant::FACEBOOK_APP_ID, self::FACEBOOK_APP_ID);
-        $configuration->setString(AuthConstant::FACEBOOK_API_VERSION, 'v21.0');
-        if ($includeAppSecret) {
-            $configuration->setString(AuthConstant::FACEBOOK_APP_SECRET, self::FACEBOOK_APP_SECRET);
-        }
+        list($model) = $this->createModel([
+            new Response(200, [], (string) json_encode([
+                'data' => [
+                    'is_valid' => true,
+                    'app_id' => self::FACEBOOK_APP_ID,
+                    'expires_at' => time() + 3600,
+                ],
+            ])),
+            new Response(200, [], (string) json_encode([
+                'id' => 'facebook-user-id',
+                'email' => 'user@example.com',
+            ])),
+        ]);
 
-        $mock = new MockHandler(array_values($responses));
-        $client = new Client(['handler' => HandlerStack::create($mock)]);
-
-        return [new SocialLoginFacebook($configuration, $client), $mock];
+        $this->assertSame(
+            [
+                'id' => 'facebook-user-id',
+                'email' => 'user@example.com',
+            ],
+            $model->authTokenToPayload('valid-access-token')
+        );
     }
 }

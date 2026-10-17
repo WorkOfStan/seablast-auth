@@ -23,10 +23,10 @@ class SocialLoginGoogle
 {
     use \Nette\SmartObject;
 
-    /** @var SeablastConfiguration */
-    protected $configuration;
     /** @var ClientInterface */
     private $client;
+    /** @var SeablastConfiguration */
+    protected $configuration;
 
     /**
      * @param SeablastConfiguration $configuration

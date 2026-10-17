@@ -181,6 +181,17 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
+     * Returns an escaped hash of a bearer token for database storage or lookup.
+     *
+     * @param string $token
+     * @return string
+     */
+    private function escapeTokenHash(string $token): string
+    {
+        return $this->mysqli->real_escape_string($this->hashToken($token));
+    }
+
+    /**
      * Executes a write query and throws on database errors.
      *
      * @param string $query SQL query string.
@@ -231,17 +242,6 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Returns an escaped hash of a bearer token for database storage or lookup.
-     *
-     * @param string $token
-     * @return string
-     */
-    private function escapeTokenHash(string $token): string
-    {
-        return $this->mysqli->real_escape_string($this->hashToken($token));
-    }
-
-    /**
      * Retrieves the email of the currently authenticated user.
      *
      * @return string The user's email address.
@@ -285,33 +285,6 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Retrieves the user ID of the authenticated user.
-     *
-     * Implementation of Seablast\Seablast\IdentityManagerInterface.
-     *
-     * @return int The user ID.
-     * @throws UserException If the user ID has not been set.
-     */
-    public function getUserId(): int
-    {
-        if (empty($this->userId)) {
-            throw new UserException('You should first check the existence of User.');
-        }
-        return $this->userId;
-    }
-
-    /**
-     * Hashes a bearer token before it is stored or looked up in the database.
-     *
-     * @param string $token
-     * @return string
-     */
-    private function hashToken(string $token): string
-    {
-        return hash(self::TOKEN_HASH_ALGORITHM, $token);
-    }
-
-    /**
      * Determines if the user with the given session token exists and is not older than specified days.
      *
      * @param string $sessionToken Session token to validate.
@@ -350,6 +323,33 @@ class IdentityManager implements IdentityManagerInterface
             Debugger::barDump('No session update as younger than 5 minutes');
         }
         return $userId;
+    }
+
+    /**
+     * Retrieves the user ID of the authenticated user.
+     *
+     * Implementation of Seablast\Seablast\IdentityManagerInterface.
+     *
+     * @return int The user ID.
+     * @throws UserException If the user ID has not been set.
+     */
+    public function getUserId(): int
+    {
+        if (empty($this->userId)) {
+            throw new UserException('You should first check the existence of User.');
+        }
+        return $this->userId;
+    }
+
+    /**
+     * Hashes a bearer token before it is stored or looked up in the database.
+     *
+     * @param string $token
+     * @return string
+     */
+    private function hashToken(string $token): string
+    {
+        return hash(self::TOKEN_HASH_ALGORITHM, $token);
     }
 
     /**
@@ -418,6 +418,25 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
+     * Checks whether a login email was requested recently enough to throttle another email.
+     *
+     * @param string $email
+     * @param int $seconds
+     * @return bool
+     */
+    public function isLoginEmailRecentlyRequested(string $email, int $seconds = 120): bool
+    {
+        Assert::email($email);
+        $seconds = max(1, $seconds);
+        $row = $this->fetchFirstRow(
+            "SELECT id FROM `{$this->tablePrefix}email_token` WHERE email = '"
+            . $this->mysqli->real_escape_string($email) . "' AND created > (NOW() - INTERVAL "
+            . (int) $seconds . " SECOND) LIMIT 1;"
+        );
+        return $row !== null;
+    }
+
+    /**
      * Determines if the current authentication attempt is for a new user.
      *
      * @return bool True if new user, false otherwise.
@@ -480,25 +499,6 @@ class IdentityManager implements IdentityManagerInterface
             . $this->mysqli->real_escape_string($email) . "', '" . $this->escapeTokenHash($token)
             . "', CURRENT_TIMESTAMP);");
         return $token;
-    }
-
-    /**
-     * Checks whether a login email was requested recently enough to throttle another email.
-     *
-     * @param string $email
-     * @param int $seconds
-     * @return bool
-     */
-    public function isLoginEmailRecentlyRequested(string $email, int $seconds = 120): bool
-    {
-        Assert::email($email);
-        $seconds = max(1, $seconds);
-        $row = $this->fetchFirstRow(
-            "SELECT id FROM `{$this->tablePrefix}email_token` WHERE email = '"
-            . $this->mysqli->real_escape_string($email) . "' AND created > (NOW() - INTERVAL "
-            . (int) $seconds . " SECOND) LIMIT 1;"
-        );
-        return $row !== null;
     }
 
     /**
@@ -625,33 +625,6 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Emits a SameSite cookie header for PHP 7.2, which lacks the setcookie() options array.
-     *
-     * @param string $value
-     * @param int $time
-     * @return bool
-     */
-    private function setSameSiteCookieForLegacyPhp(string $value, int $time): bool
-    {
-        if (headers_sent()) {
-            return false;
-        }
-        $cookie = [
-            'sbRememberMe=' . rawurlencode($value),
-            'Expires=' . gmdate('D, d M Y H:i:s T', $time),
-            'Max-Age=' . max(0, $time - time()),
-        ];
-        if ($this->cookiePath !== '') {
-            $cookie[] = 'Path=' . $this->cookiePath;
-        }
-        $cookie[] = 'Secure';
-        $cookie[] = 'HttpOnly';
-        $cookie[] = 'SameSite=Lax';
-        header('Set-Cookie: ' . implode('; ', $cookie), false);
-        return true;
-    }
-
-    /**
      * Cookie path injection.
      *
      * As the default relative path '' may change (between /app and /app/user) causing cookie conflicts.
@@ -676,6 +649,33 @@ class IdentityManager implements IdentityManagerInterface
     public function setRememberMeCookieEnabled(bool $enabled): void
     {
         $this->rememberMeCookieEnabled = $enabled;
+    }
+
+    /**
+     * Emits a SameSite cookie header for PHP 7.2, which lacks the setcookie() options array.
+     *
+     * @param string $value
+     * @param int $time
+     * @return bool
+     */
+    private function setSameSiteCookieForLegacyPhp(string $value, int $time): bool
+    {
+        if (headers_sent()) {
+            return false;
+        }
+        $cookie = [
+            'sbRememberMe=' . rawurlencode($value),
+            'Expires=' . gmdate('D, d M Y H:i:s T', $time),
+            'Max-Age=' . max(0, $time - time()),
+        ];
+        if ($this->cookiePath !== '') {
+            $cookie[] = 'Path=' . $this->cookiePath;
+        }
+        $cookie[] = 'Secure';
+        $cookie[] = 'HttpOnly';
+        $cookie[] = 'SameSite=Lax';
+        header('Set-Cookie: ' . implode('; ', $cookie), false);
+        return true;
     }
 
     /**

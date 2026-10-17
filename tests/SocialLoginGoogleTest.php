@@ -17,21 +17,34 @@ class SocialLoginGoogleTest extends TestCase
 {
     private const GOOGLE_CLIENT_ID = 'test-client.apps.googleusercontent.com';
 
-    public function testReturnsPayloadForValidTokeninfoResponse(): void
+    /**
+     * @param array<int,Response> $responses
+     * @return SocialLoginGoogle
+     */
+    private function createModel(array $responses): SocialLoginGoogle
     {
-        $payload = [
-            'aud' => self::GOOGLE_CLIENT_ID,
-            'iss' => 'https://accounts.google.com',
-            'email' => 'user@example.com',
-            'exp' => (string) (time() + 3600),
-            'email_verified' => 'true',
-        ];
+        $configuration = new SeablastConfiguration();
+        $configuration->setString(AuthConstant::GOOGLE_CLIENT_ID, self::GOOGLE_CLIENT_ID);
 
+        $mock = new MockHandler(array_values($responses));
+        $client = new Client(['handler' => HandlerStack::create($mock)]);
+
+        return new SocialLoginGoogle($configuration, $client);
+    }
+
+    public function testRejectsAudienceMismatch(): void
+    {
         $model = $this->createModel([
-            new Response(200, [], (string) json_encode($payload)),
+            new Response(200, [], (string) json_encode([
+                'aud' => 'other-client.apps.googleusercontent.com',
+                'iss' => 'https://accounts.google.com',
+                'email' => 'user@example.com',
+                'exp' => (string) (time() + 3600),
+                'email_verified' => 'true',
+            ])),
         ]);
 
-        $this->assertSame($payload, $model->authTokenToPayload('valid-id-token'));
+        $this->assertFalse($model->authTokenToPayload('wrong-audience-id-token'));
     }
 
     public function testRejectsExpiredTokeninfoResponse(): void
@@ -49,19 +62,22 @@ class SocialLoginGoogleTest extends TestCase
         $this->assertFalse($model->authTokenToPayload('expired-id-token'));
     }
 
-    public function testRejectsAudienceMismatch(): void
+    public function testRejectsFailedTokeninfoResponse(): void
     {
         $model = $this->createModel([
-            new Response(200, [], (string) json_encode([
-                'aud' => 'other-client.apps.googleusercontent.com',
-                'iss' => 'https://accounts.google.com',
-                'email' => 'user@example.com',
-                'exp' => (string) (time() + 3600),
-                'email_verified' => 'true',
-            ])),
+            new Response(400, [], (string) json_encode(['error' => 'invalid_token'])),
         ]);
 
-        $this->assertFalse($model->authTokenToPayload('wrong-audience-id-token'));
+        $this->assertFalse($model->authTokenToPayload('failed-response-id-token'));
+    }
+
+    public function testRejectsMalformedTokeninfoResponse(): void
+    {
+        $model = $this->createModel([
+            new Response(200, [], '{'),
+        ]);
+
+        $this->assertFalse($model->authTokenToPayload('malformed-response-id-token'));
     }
 
     public function testRejectsMissingExpiration(): void
@@ -93,36 +109,20 @@ class SocialLoginGoogleTest extends TestCase
         $this->assertFalse($model->authTokenToPayload('unverified-email-id-token'));
     }
 
-    public function testRejectsMalformedTokeninfoResponse(): void
+    public function testReturnsPayloadForValidTokeninfoResponse(): void
     {
+        $payload = [
+            'aud' => self::GOOGLE_CLIENT_ID,
+            'iss' => 'https://accounts.google.com',
+            'email' => 'user@example.com',
+            'exp' => (string) (time() + 3600),
+            'email_verified' => 'true',
+        ];
+
         $model = $this->createModel([
-            new Response(200, [], '{'),
+            new Response(200, [], (string) json_encode($payload)),
         ]);
 
-        $this->assertFalse($model->authTokenToPayload('malformed-response-id-token'));
-    }
-
-    public function testRejectsFailedTokeninfoResponse(): void
-    {
-        $model = $this->createModel([
-            new Response(400, [], (string) json_encode(['error' => 'invalid_token'])),
-        ]);
-
-        $this->assertFalse($model->authTokenToPayload('failed-response-id-token'));
-    }
-
-    /**
-     * @param array<int,Response> $responses
-     * @return SocialLoginGoogle
-     */
-    private function createModel(array $responses): SocialLoginGoogle
-    {
-        $configuration = new SeablastConfiguration();
-        $configuration->setString(AuthConstant::GOOGLE_CLIENT_ID, self::GOOGLE_CLIENT_ID);
-
-        $mock = new MockHandler(array_values($responses));
-        $client = new Client(['handler' => HandlerStack::create($mock)]);
-
-        return new SocialLoginGoogle($configuration, $client);
+        $this->assertSame($payload, $model->authTokenToPayload('valid-id-token'));
     }
 }

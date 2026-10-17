@@ -7,9 +7,9 @@ namespace Seablast\Auth;
 use Seablast\Auth\AuthConstant;
 use Seablast\Seablast\SeablastConfiguration;
 use Seablast\Seablast\SeablastConstant;
-use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Tracy\Debugger;
@@ -70,6 +70,28 @@ class MailOut
 
         $transport = Transport::fromDsn($dsn);
         $this->mailer = new Mailer($transport);
+    }
+
+    /**
+     * Normalize string|string[] into array of valid emails.
+     *
+     * @param string|string[] $value
+     * @return string[]
+     */
+    private function normalizeEmails($value): array
+    {
+        if (is_string($value)) {
+            $value = [$value];
+        }
+        //Assert::isArray($value, 'Expected string or array of e-mails.');
+        $value = array_values(array_filter($value, static function ($v): bool {
+            return //is_string($v) &&
+            $v !== '';
+        }));
+        foreach ($value as $addr) {
+            Assert::email($addr, 'Invalid e-mail in list: %s');
+        }
+        return $value;
     }
 
     /**
@@ -152,27 +174,5 @@ class MailOut
 
         $this->mailer->send($email);
         Debugger::log("SENDING " . $from->getAddress() . " -> {$to}/{$subject}", ILogger::INFO);
-    }
-
-    /**
-     * Normalize string|string[] into array of valid emails.
-     *
-     * @param string|string[] $value
-     * @return string[]
-     */
-    private function normalizeEmails($value): array
-    {
-        if (is_string($value)) {
-            $value = [$value];
-        }
-        //Assert::isArray($value, 'Expected string or array of e-mails.');
-        $value = array_values(array_filter($value, static function ($v): bool {
-            return //is_string($v) &&
-            $v !== '';
-        }));
-        foreach ($value as $addr) {
-            Assert::email($addr, 'Invalid e-mail in list: %s');
-        }
-        return $value;
     }
 }

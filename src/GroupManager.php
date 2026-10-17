@@ -159,17 +159,6 @@ class GroupManager
     }
 
     /**
-     * Return the start of the hour containing the supplied Unix timestamp.
-     *
-     * @param int $timestamp
-     * @return int
-     */
-    private static function roundDownToHour(int $timestamp): int
-    {
-        return intdiv($timestamp, 3600) * 3600;
-    }
-
-    /**
      * Remove user from a group. If failed, throw an Exception.
      *
      * Intended as an admin action only.
@@ -185,5 +174,16 @@ class GroupManager
                 . (int) $this->userId . '  AND group_id = ' . (int) $groupId . ';'
             )
         );
+    }
+
+    /**
+     * Return the start of the hour containing the supplied Unix timestamp.
+     *
+     * @param int $timestamp
+     * @return int
+     */
+    private static function roundDownToHour(int $timestamp): int
+    {
+        return intdiv($timestamp, 3600) * 3600;
     }
 }

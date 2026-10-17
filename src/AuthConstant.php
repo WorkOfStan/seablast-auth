@@ -17,6 +17,10 @@ class AuthConstant
     /** @var string Public Cloudflare Turnstile site key */
     public const CLOUDFLARE_TURNSTILE_SITE_KEY = 'AuthApp:CLOUDFLARE_TURNSTILE_SITE_KEY';
     /**
+     * @var string Facebook API version
+     */
+    public const FACEBOOK_API_VERSION = 'AuthApp:FACEBOOK_API_VERSION';
+    /**
      * @var string Facebook App ID
      */
     public const FACEBOOK_APP_ID = 'AuthApp:FACEBOOK_APP_ID';
@@ -24,10 +28,6 @@ class AuthConstant
      * @var string Facebook App Secret
      */
     public const FACEBOOK_APP_SECRET = 'AuthApp:FACEBOOK_APP_SECRET';
-    /**
-     * @var string Facebook API version
-     */
-    public const FACEBOOK_API_VERSION = 'AuthApp:FACEBOOK_API_VERSION';
     /**
      * @var string Flag: Create/read Remember me cookie for long term login
      */

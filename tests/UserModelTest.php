@@ -18,6 +18,102 @@ use Seablast\Seablast\Superglobals;
 
 class UserModelTest extends TestCase
 {
+    /**
+     * @param bool $validToken
+     * @return IdentityManager&MockObject
+     */
+    private function createIdentityMock(bool $validToken): IdentityManager
+    {
+        /** @var IdentityManager&MockObject $identity */
+        $identity = $this->getMockBuilder(IdentityManager::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['isAuthenticated', 'isTokenValid'])
+            ->getMock();
+        $identity->expects($this->once())->method('isAuthenticated')->willReturn(false);
+        $identity->expects($this->once())->method('isTokenValid')->willReturn($validToken);
+        return $identity;
+    }
+
+    /**
+     * @param mixed[] $get
+     * @param mixed[] $server
+     * @param IdentityManager|null $identity
+     * @return UserModel
+     */
+    private function createModel(array $get, array $server, ?IdentityManager $identity = null): UserModel
+    {
+        $configuration = new SeablastConfiguration();
+        $configuration->setString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL, 'https://example.test/app');
+
+        $reflection = new ReflectionClass(UserModel::class);
+        /** @var UserModel $model */
+        $model = $reflection->newInstanceWithoutConstructor();
+        $this->setPrivateProperty($model, 'configuration', $configuration);
+        $this->setPrivateProperty($model, 'superglobals', new Superglobals($get, [], $server));
+        $this->setPrivateProperty($model, 'userRoute', '/user');
+        if ($identity !== null) {
+            $this->setPrivateProperty($model, 'user', $identity);
+        }
+        return $model;
+    }
+
+    /**
+     * @param mixed[] $server
+     * @param bool $enabled
+     * @param bool $remembered
+     * @return UserModel
+     */
+    private function createRememberMeModel(
+        array $server,
+        bool $enabled = true,
+        bool $remembered = true
+    ): UserModel {
+        $identity = $this->getMockBuilder(IdentityManager::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['isAuthenticated', 'isTokenValid', 'doYouRememberMe'])
+            ->getMock();
+        $identity->expects($this->once())->method('isAuthenticated')->willReturn(false);
+        $identity->expects($this->never())->method('isTokenValid');
+        $identity->expects($enabled ? $this->once() : $this->never())
+            ->method('doYouRememberMe')->willReturn($remembered);
+        $model = $this->createModel([], ['REQUEST_METHOD' => 'GET'] + $server, $identity);
+        $configuration = new SeablastConfiguration();
+        $configuration->setString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL, 'https://example.test/app');
+        if ($enabled) {
+            $configuration->flag->activate(AuthConstant::FLAG_REMEMBER_ME_COOKIE);
+        }
+        $this->setPrivateProperty($model, 'configuration', $configuration);
+        return $model;
+    }
+
+    /**
+     * @param UserModel $model
+     * @param string $name
+     * @param mixed[] $arguments
+     * @return string
+     */
+    private function invokePrivateStringMethod(UserModel $model, string $name, array $arguments): string
+    {
+        $method = new ReflectionMethod(UserModel::class, $name);
+        $method->setAccessible(true);
+        $result = $method->invokeArgs($model, $arguments);
+        $this->assertIsString($result);
+        return $result;
+    }
+
+    /**
+     * @param UserModel $model
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
+    private function setPrivateProperty(UserModel $model, string $name, $value): void
+    {
+        $property = new ReflectionProperty(UserModel::class, $name);
+        $property->setAccessible(true);
+        $property->setValue($model, $value);
+    }
+
     public function testBuildLoginUrlPreservesSafeTargetAndQueryInSubdirectory(): void
     {
         $model = $this->createModel(
@@ -47,22 +143,28 @@ class UserModelTest extends TestCase
         $this->assertArrayNotHasKey('returnUrl', $returnQuery);
     }
 
-    public function testSuccessfulTokenRedirectsToSafeReturnUrlWithSeeOther(): void
+    public function testDirectUserLoginKeepsExistingDestination(): void
     {
-        $identity = $this->createIdentityMock(true);
-        $model = $this->createModel(
-            [
-                'token' => 'valid-token',
-                'returnUrl' => '/private/report?filter=open&token=leaked&returnUrl=nested',
-            ],
-            ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/app/user/?token=valid-token'],
-            $identity
-        );
+        $model = $this->createModel([], ['REQUEST_URI' => '/app/user/']);
 
-        $result = $model->knowledge();
+        $loginUrl = $this->invokePrivateStringMethod($model, 'buildLoginUrl', ['fresh-token']);
+        $loginQuery = [];
+        parse_str((string) parse_url($loginUrl, PHP_URL_QUERY), $loginQuery);
 
-        $this->assertSame('https://example.test/app/private/report?filter=open', $result->redirectionUrl);
-        $this->assertSame(303, $result->httpCode);
+        $this->assertSame('/user', $loginQuery['returnUrl']);
+    }
+
+    public function testInvalidOrDisabledRememberMeDoesNotRedirect(): void
+    {
+        foreach ([true, false] as $enabled) {
+            $model = $this->createRememberMeModel(['REQUEST_URI' => '/app/private'], $enabled, false);
+
+            $result = $model->knowledge();
+
+            $this->assertTrue($result->showLogin);
+            $this->assertFalse($result->showLogout);
+            $this->assertFalse(isset($result->redirectionUrl));
+        }
     }
 
     public function testInvalidReturnUrlsFallBackToUserRoute(): void
@@ -97,28 +199,6 @@ class UserModelTest extends TestCase
         }
     }
 
-    public function testMalformedCurrentRequestFallsBackToDirectUserLogin(): void
-    {
-        $model = $this->createModel([], ['REQUEST_URI' => 'https://attacker.test/private']);
-
-        $loginUrl = $this->invokePrivateStringMethod($model, 'buildLoginUrl', ['fresh-token']);
-        $loginQuery = [];
-        parse_str((string) parse_url($loginUrl, PHP_URL_QUERY), $loginQuery);
-
-        $this->assertSame('/user', $loginQuery['returnUrl']);
-    }
-
-    public function testDirectUserLoginKeepsExistingDestination(): void
-    {
-        $model = $this->createModel([], ['REQUEST_URI' => '/app/user/']);
-
-        $loginUrl = $this->invokePrivateStringMethod($model, 'buildLoginUrl', ['fresh-token']);
-        $loginQuery = [];
-        parse_str((string) parse_url($loginUrl, PHP_URL_QUERY), $loginQuery);
-
-        $this->assertSame('/user', $loginQuery['returnUrl']);
-    }
-
     public function testInvalidTokenDoesNotRedirect(): void
     {
         $identity = $this->createIdentityMock(false);
@@ -133,6 +213,17 @@ class UserModelTest extends TestCase
         $this->assertTrue($result->showLogin);
         $this->assertSame('Invalid token.', $result->message);
         $this->assertFalse(isset($result->redirectionUrl));
+    }
+
+    public function testMalformedCurrentRequestFallsBackToDirectUserLogin(): void
+    {
+        $model = $this->createModel([], ['REQUEST_URI' => 'https://attacker.test/private']);
+
+        $loginUrl = $this->invokePrivateStringMethod($model, 'buildLoginUrl', ['fresh-token']);
+        $loginQuery = [];
+        parse_str((string) parse_url($loginUrl, PHP_URL_QUERY), $loginQuery);
+
+        $this->assertSame('/user', $loginQuery['returnUrl']);
     }
 
     public function testRememberMeRedirectsToCurrentRequestWithSeeOther(): void
@@ -191,112 +282,21 @@ class UserModelTest extends TestCase
         }
     }
 
-    public function testInvalidOrDisabledRememberMeDoesNotRedirect(): void
+    public function testSuccessfulTokenRedirectsToSafeReturnUrlWithSeeOther(): void
     {
-        foreach ([true, false] as $enabled) {
-            $model = $this->createRememberMeModel(['REQUEST_URI' => '/app/private'], $enabled, false);
+        $identity = $this->createIdentityMock(true);
+        $model = $this->createModel(
+            [
+                'token' => 'valid-token',
+                'returnUrl' => '/private/report?filter=open&token=leaked&returnUrl=nested',
+            ],
+            ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/app/user/?token=valid-token'],
+            $identity
+        );
 
-            $result = $model->knowledge();
+        $result = $model->knowledge();
 
-            $this->assertTrue($result->showLogin);
-            $this->assertFalse($result->showLogout);
-            $this->assertFalse(isset($result->redirectionUrl));
-        }
-    }
-
-    /**
-     * @param mixed[] $server
-     * @param bool $enabled
-     * @param bool $remembered
-     * @return UserModel
-     */
-    private function createRememberMeModel(
-        array $server,
-        bool $enabled = true,
-        bool $remembered = true
-    ): UserModel {
-        $identity = $this->getMockBuilder(IdentityManager::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['isAuthenticated', 'isTokenValid', 'doYouRememberMe'])
-            ->getMock();
-        $identity->expects($this->once())->method('isAuthenticated')->willReturn(false);
-        $identity->expects($this->never())->method('isTokenValid');
-        $identity->expects($enabled ? $this->once() : $this->never())
-            ->method('doYouRememberMe')->willReturn($remembered);
-        $model = $this->createModel([], ['REQUEST_METHOD' => 'GET'] + $server, $identity);
-        $configuration = new SeablastConfiguration();
-        $configuration->setString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL, 'https://example.test/app');
-        if ($enabled) {
-            $configuration->flag->activate(AuthConstant::FLAG_REMEMBER_ME_COOKIE);
-        }
-        $this->setPrivateProperty($model, 'configuration', $configuration);
-        return $model;
-    }
-
-    /**
-     * @param mixed[] $get
-     * @param mixed[] $server
-     * @param IdentityManager|null $identity
-     * @return UserModel
-     */
-    private function createModel(array $get, array $server, ?IdentityManager $identity = null): UserModel
-    {
-        $configuration = new SeablastConfiguration();
-        $configuration->setString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL, 'https://example.test/app');
-
-        $reflection = new ReflectionClass(UserModel::class);
-        /** @var UserModel $model */
-        $model = $reflection->newInstanceWithoutConstructor();
-        $this->setPrivateProperty($model, 'configuration', $configuration);
-        $this->setPrivateProperty($model, 'superglobals', new Superglobals($get, [], $server));
-        $this->setPrivateProperty($model, 'userRoute', '/user');
-        if ($identity !== null) {
-            $this->setPrivateProperty($model, 'user', $identity);
-        }
-        return $model;
-    }
-
-    /**
-     * @param bool $validToken
-     * @return IdentityManager&MockObject
-     */
-    private function createIdentityMock(bool $validToken): IdentityManager
-    {
-        /** @var IdentityManager&MockObject $identity */
-        $identity = $this->getMockBuilder(IdentityManager::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['isAuthenticated', 'isTokenValid'])
-            ->getMock();
-        $identity->expects($this->once())->method('isAuthenticated')->willReturn(false);
-        $identity->expects($this->once())->method('isTokenValid')->willReturn($validToken);
-        return $identity;
-    }
-
-    /**
-     * @param UserModel $model
-     * @param string $name
-     * @param mixed $value
-     * @return void
-     */
-    private function setPrivateProperty(UserModel $model, string $name, $value): void
-    {
-        $property = new ReflectionProperty(UserModel::class, $name);
-        $property->setAccessible(true);
-        $property->setValue($model, $value);
-    }
-
-    /**
-     * @param UserModel $model
-     * @param string $name
-     * @param mixed[] $arguments
-     * @return string
-     */
-    private function invokePrivateStringMethod(UserModel $model, string $name, array $arguments): string
-    {
-        $method = new ReflectionMethod(UserModel::class, $name);
-        $method->setAccessible(true);
-        $result = $method->invokeArgs($model, $arguments);
-        $this->assertIsString($result);
-        return $result;
+        $this->assertSame('https://example.test/app/private/report?filter=open', $result->redirectionUrl);
+        $this->assertSame(303, $result->httpCode);
     }
 }

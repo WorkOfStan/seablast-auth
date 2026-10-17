@@ -18,31 +18,61 @@ use Phinx\Migration\IrreversibleMigrationException;
  */
 final class EnforceRequiredColumnsNotNull extends AbstractMigration
 {
-    public function up(): void
-    {
-        $columnDefinitions = $this->columnDefinitions();
-        $this->assertRequiredColumnsContainNoNulls($columnDefinitions);
-
-        try {
-            $this->removeForeignKeys();
-            foreach ($columnDefinitions as $tableName => $columns) {
-                $table = $this->table($tableName);
-                foreach ($columns as $columnName => $definition) {
-                    $table->changeColumn($columnName, $definition['type'], $definition['options']);
-                }
-                $table->update();
-            }
-        } finally {
-            $this->addForeignKeys();
+    private function addForeignKey(
+        string $tableName,
+        string $columnName,
+        string $referencedTableName,
+        string $referencedColumnName
+    ): void {
+        $table = $this->table($tableName);
+        if (!$table->hasForeignKey($columnName)) {
+            $table->addForeignKey(
+                $columnName,
+                $referencedTableName,
+                $referencedColumnName,
+                ['delete' => 'CASCADE', 'update' => 'NO_ACTION']
+            )->update();
         }
     }
 
-    public function down(): void
+    private function addForeignKeys(): void
     {
-        throw new IrreversibleMigrationException(
-            'Required NOT NULL constraints cannot be safely reverted because prior nullability depends '
-            . 'on the Phinx version.'
-        );
+        $this->addForeignKey('users', 'role_id', 'roles', 'id');
+        $this->addForeignKey('email_token', 'email', 'users', 'email');
+        $this->addForeignKey('session_user', 'user_id', 'users', 'id');
+        $this->addForeignKey('user_group', 'user_id', 'users', 'id');
+        $this->addForeignKey('user_group', 'group_id', 'group', 'id');
+        $this->addForeignKey('group_activation_tokens', 'group_id', 'group', 'id');
+    }
+
+    /**
+     * @param array<string, array<string, ColumnDefinition>> $columnDefinitions
+     */
+    private function assertRequiredColumnsContainNoNulls(array $columnDefinitions): void
+    {
+        $adapter = $this->getInitializedAdapter();
+        $nullableColumns = [];
+
+        foreach ($columnDefinitions as $tableName => $columns) {
+            $physicalTableName = $this->tableNameWithConfiguredAffixes($adapter, $tableName);
+            $quotedTableName = $adapter->quoteTableName($physicalTableName);
+            foreach (array_keys($columns) as $columnName) {
+                $row = $adapter->fetchRow(
+                    'SELECT 1 FROM ' . $quotedTableName
+                    . ' WHERE ' . $adapter->quoteColumnName($columnName) . ' IS NULL LIMIT 1'
+                );
+                if ($row !== false) {
+                    $nullableColumns[] = $tableName . '.' . $columnName;
+                }
+            }
+        }
+
+        if ($nullableColumns !== []) {
+            throw new \RuntimeException(
+                'Cannot enforce required NOT NULL columns because NULL values exist in: '
+                . implode(', ', $nullableColumns) . '.'
+            );
+        }
     }
 
     /**
@@ -184,33 +214,24 @@ final class EnforceRequiredColumnsNotNull extends AbstractMigration
         ];
     }
 
-    /**
-     * @param array<string, array<string, ColumnDefinition>> $columnDefinitions
-     */
-    private function assertRequiredColumnsContainNoNulls(array $columnDefinitions): void
+    public function down(): void
     {
-        $adapter = $this->getInitializedAdapter();
-        $nullableColumns = [];
+        throw new IrreversibleMigrationException(
+            'Required NOT NULL constraints cannot be safely reverted because prior nullability depends '
+            . 'on the Phinx version.'
+        );
+    }
 
-        foreach ($columnDefinitions as $tableName => $columns) {
-            $physicalTableName = $this->tableNameWithConfiguredAffixes($adapter, $tableName);
-            $quotedTableName = $adapter->quoteTableName($physicalTableName);
-            foreach (array_keys($columns) as $columnName) {
-                $row = $adapter->fetchRow(
-                    'SELECT 1 FROM ' . $quotedTableName
-                    . ' WHERE ' . $adapter->quoteColumnName($columnName) . ' IS NULL LIMIT 1'
-                );
-                if ($row !== false) {
-                    $nullableColumns[] = $tableName . '.' . $columnName;
-                }
-            }
-        }
+    private function getInitializedAdapter(): AdapterInterface
+    {
+        return $this->requireInitializedAdapter($this->getAdapter());
+    }
 
-        if ($nullableColumns !== []) {
-            throw new \RuntimeException(
-                'Cannot enforce required NOT NULL columns because NULL values exist in: '
-                . implode(', ', $nullableColumns) . '.'
-            );
+    private function removeForeignKey(string $tableName, string $columnName): void
+    {
+        $table = $this->table($tableName);
+        if ($table->hasForeignKey($columnName)) {
+            $table->dropForeignKey($columnName)->update();
         }
     }
 
@@ -224,39 +245,16 @@ final class EnforceRequiredColumnsNotNull extends AbstractMigration
         $this->removeForeignKey('group_activation_tokens', 'group_id');
     }
 
-    private function removeForeignKey(string $tableName, string $columnName): void
+    /**
+     * @param mixed $adapter
+     */
+    private function requireInitializedAdapter($adapter): AdapterInterface
     {
-        $table = $this->table($tableName);
-        if ($table->hasForeignKey($columnName)) {
-            $table->dropForeignKey($columnName)->update();
+        if (!$adapter instanceof AdapterInterface) {
+            throw new \RuntimeException('Migration adapter is not initialized.');
         }
-    }
 
-    private function addForeignKeys(): void
-    {
-        $this->addForeignKey('users', 'role_id', 'roles', 'id');
-        $this->addForeignKey('email_token', 'email', 'users', 'email');
-        $this->addForeignKey('session_user', 'user_id', 'users', 'id');
-        $this->addForeignKey('user_group', 'user_id', 'users', 'id');
-        $this->addForeignKey('user_group', 'group_id', 'group', 'id');
-        $this->addForeignKey('group_activation_tokens', 'group_id', 'group', 'id');
-    }
-
-    private function addForeignKey(
-        string $tableName,
-        string $columnName,
-        string $referencedTableName,
-        string $referencedColumnName
-    ): void {
-        $table = $this->table($tableName);
-        if (!$table->hasForeignKey($columnName)) {
-            $table->addForeignKey(
-                $columnName,
-                $referencedTableName,
-                $referencedColumnName,
-                ['delete' => 'CASCADE', 'update' => 'NO_ACTION']
-            )->update();
-        }
+        return $adapter;
     }
 
     private function tableNameWithConfiguredAffixes(AdapterInterface $adapter, string $tableName): string
@@ -271,20 +269,22 @@ final class EnforceRequiredColumnsNotNull extends AbstractMigration
         return $tablePrefix . $tableName . $tableSuffix;
     }
 
-    private function getInitializedAdapter(): AdapterInterface
+    public function up(): void
     {
-        return $this->requireInitializedAdapter($this->getAdapter());
-    }
+        $columnDefinitions = $this->columnDefinitions();
+        $this->assertRequiredColumnsContainNoNulls($columnDefinitions);
 
-    /**
-     * @param mixed $adapter
-     */
-    private function requireInitializedAdapter($adapter): AdapterInterface
-    {
-        if (!$adapter instanceof AdapterInterface) {
-            throw new \RuntimeException('Migration adapter is not initialized.');
+        try {
+            $this->removeForeignKeys();
+            foreach ($columnDefinitions as $tableName => $columns) {
+                $table = $this->table($tableName);
+                foreach ($columns as $columnName => $definition) {
+                    $table->changeColumn($columnName, $definition['type'], $definition['options']);
+                }
+                $table->update();
+            }
+        } finally {
+            $this->addForeignKeys();
         }
-
-        return $adapter;
     }
 }

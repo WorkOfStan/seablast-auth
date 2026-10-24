@@ -20,17 +20,22 @@ class UserModelTest extends TestCase
 {
     /**
      * @param bool $validToken
+     * @param bool $authenticated
      * @return IdentityManager&MockObject
      */
-    private function createIdentityMock(bool $validToken): IdentityManager
+    private function createIdentityMock(bool $validToken, bool $authenticated = false): IdentityManager
     {
         /** @var IdentityManager&MockObject $identity */
         $identity = $this->getMockBuilder(IdentityManager::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['isAuthenticated', 'isTokenValid'])
+            ->onlyMethods(['isAuthenticated', 'isTokenValid', 'getIdentityForEmailToken', 'getUserId'])
             ->getMock();
-        $identity->expects($this->once())->method('isAuthenticated')->willReturn(false);
-        $identity->expects($this->once())->method('isTokenValid')->willReturn($validToken);
+        $identity->expects($this->once())->method('isAuthenticated')->willReturn($authenticated);
+        $identity->expects($this->never())->method('isTokenValid');
+        $identity->expects($this->once())->method('getIdentityForEmailToken')->willReturn(
+            $validToken ? ['userId' => 7, 'email' => 'bob@example.test', 'expiresAt' => time() + 900] : null
+        );
+        $identity->method('getUserId')->willReturn(7);
         return $identity;
     }
 
@@ -181,7 +186,7 @@ class UserModelTest extends TestCase
             'fragment' => '/safe#fragment',
         ];
         foreach ($invalidReturnUrls as $description => $returnUrl) {
-            $identity = $this->createIdentityMock(true);
+            $identity = $this->createIdentityMock(true, true);
             $model = $this->createModel(
                 ['token' => 'valid-token', 'returnUrl' => $returnUrl],
                 ['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/app/user/?token=valid-token'],
@@ -211,7 +216,8 @@ class UserModelTest extends TestCase
         $result = $model->knowledge();
 
         $this->assertTrue($result->showLogin);
-        $this->assertSame('Invalid token.', $result->message);
+        $this->assertIsString($result->message);
+        $this->assertStringContainsString('neplatný nebo vypršel', $result->message);
         $this->assertFalse(isset($result->redirectionUrl));
     }
 
@@ -284,7 +290,7 @@ class UserModelTest extends TestCase
 
     public function testSuccessfulTokenRedirectsToSafeReturnUrlWithSeeOther(): void
     {
-        $identity = $this->createIdentityMock(true);
+        $identity = $this->createIdentityMock(true, true);
         $model = $this->createModel(
             [
                 'token' => 'valid-token',

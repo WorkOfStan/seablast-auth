@@ -2,6 +2,7 @@
 /log/*
 !/log/.htaccess
 .*.cache
+/.tmp
 
 #disable private local files
 *.local.*

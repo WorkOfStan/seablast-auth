@@ -21,9 +21,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.4] - TBD
 
+feat(user-control.latte)!: Require explicit email-login confirmation
+
 ### Changed
 
 - Sort PHP imports, constants, properties, and methods alphabetically without changing their implementation.
+- feat!: **BREAKING CHANGE** Require explicit email-login confirmation and offer account switching while preserving the current account on failure. Custom `user-control.latte` which remains without update, prevents an email link login.
+- Document the ten-confirmation session limit, original fifteen-minute token lifetime, and InnoDB requirements.
+- Clarify that outdated application login templates block email confirmation and require an explicit template update.
+
+### Added
+
+- Add a session-bound confirmation template and a side-effect-free email-token identity lookup.
+
+### Security
+
+- Consume email tokens only after CSRF-protected confirmation in the bundled model and serialize consumption in InnoDB.
+- Replace browser authentication tokens transactionally and renew the PHP session ID on confirmed email login.
 
 ## [0.2.3] - 2026-09-27
 

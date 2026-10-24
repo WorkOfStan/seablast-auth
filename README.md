@@ -51,6 +51,14 @@ Following tables will be created (prefixed as set in your app), so avoid conflic
 - users (user)
 - user_group (user_groups)
 
+The authentication tables must use **InnoDB**. This was previously an implicit requirement for the foreign keys
+declared by the migrations; confirmed email login and account switching now also rely on transactions and row locks.
+The MySQL adapter in Phinx creates InnoDB tables by default when migrations do not specify an engine.
+Before upgrading an existing installation, check the actual table engines, for example with
+`SHOW TABLE STATUS FROM your_database`, including the configured table prefix. Tables created outside the standard
+migrations or converted to another engine must be reviewed and converted to InnoDB before using confirmed email login.
+No schema migration is needed for tables that already use InnoDB.
+
 ### Group membership validity
 
 `GroupManager::addUserToGroup()` accepts an optional `DateTimeInterface $validTo` argument. A null value creates
@@ -64,12 +72,13 @@ boundary. The activation token's own `valid_from` and `valid_to` window remains 
 ### Authentication time limits
 
 Seablast starts the PHP session before the authentication models run. A successful email-token or social login
-therefore adds a newly generated token to the existing `$_SESSION['sbSessionToken']` and stores only its hash in
-`session_user`; Seablast Auth does not create the PHP session cookie itself.
+therefore stores a newly generated token in `$_SESSION['sbSessionToken']` and stores only its hash in
+`session_user`. Confirmed email login renews the PHP session ID and cookie before consuming the email token;
+other authentication paths use the PHP session already started by Seablast.
 
 | Limit                        | Duration                                                                                               | Behavior                                                                                                                                                                                                                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PHP session cookie           | 3 hours (10,800 seconds) by default                                                                    | This is an absolute lifetime from when the cookie is issued, not an inactivity timeout. `SB_SESSION_SET_COOKIE_PARAMS_LIFETIME` controls it; ordinary requests reapply the cookie parameters but do not refresh the expiration time of an existing cookie (TODO: consider `session_regenerate_id()`). |
+| PHP session cookie           | 3 hours (10,800 seconds) by default                                                                    | This is an absolute lifetime from when the cookie is issued, not an inactivity timeout. `SB_SESSION_SET_COOKIE_PARAMS_LIFETIME` controls it; ordinary requests reapply the cookie parameters but do not refresh the expiration time of an existing cookie (confirmed email login renews the session ID and cookie). |
 | Session authentication token | Approximately 1 day of inactivity (nominally 86,400 seconds and effectively up to just under 25 hours) | The unhashed token exists only in the PHP session, while its hash is stored in `session_user`. Validation uses an hourly boundary, and activity refreshes the database timestamp after more than 5 minutes.                                                                                           |
 | Remember Me                  | 30 days (2,592,000 seconds)                                                                            | Over HTTPS, a successful email-token or social login creates this cookie when enabled. A successful automatic login rotates the token and restarts the 30-day period.                                                                                                                                 |
 | Login-email resend cooldown  | 120 seconds                                                                                            | Repeated requests for the same email address are suppressed during this period.                                                                                                                                                                                                                       |
@@ -140,6 +149,81 @@ Note 1: Seablast::v0.2.5 and newer use the default settings in the [conf/app.con
 These arguments `window.sendAuthToken(token, apiRoute, errorLogger);` are processed since Seablast::v0.2.13.
 
 Note 2: `const API_BASE = ''; const flags = [];` MUST be defined in JavaScript as the default `/user` expects these two variables.
+
+### Email login confirmation and account switching
+
+Opening an email login link with GET only inspects its token and prepares a confirmation page; it never consumes
+the token, updates `last_login`, or logs in as the link's account. HEAD does not prepare or confirm a login either.
+The browser is redirected with HTTP 303 to a session-bound confirmation URL without the email token.
+The confirmation works without JavaScript and requires an explicit POST with a valid session CSRF token:
+
+- A signed-out user sees the target email and **Přihlásit se** / **Zrušit** buttons.
+- A user signed in as A who opens a link for B sees **Přepnutí účtu**, both email addresses,
+  and **Přepnout na bob@example.com** / **Zůstat přihlášen** buttons. The target email is used instead of guessing a name.
+- A user already signed in as the link's account continues directly to the safe `returnUrl`, without consuming
+  the token or requiring confirmation.
+- **Zůstat přihlášen** and **Zrušit** discard only that browser confirmation and return to the configured user route
+  (normally `/user`), without consuming the email token or changing the signed-in account.
+
+Successful confirmation consumes the token once and redirects with HTTP 303 to the safe `returnUrl`.
+Account switching replaces only this browser's authentication tokens, including its old Remember Me token;
+other devices remain signed in. New Remember Me cookies still require HTTPS and the existing feature flag.
+The token consumption, `last_login` update, new authentication records and old browser-token deletion share one
+InnoDB transaction. An expired or already-used token, or a database failure before commit, preserves the original
+account. The PHP session ID is renewed before token consumption, and the CSRF token is invalidated after success.
+If the signed-in identity changes in another tab while confirmation is open, reopen the email link to confirm again.
+Token-bearing requests do not attempt automatic Remember Me recovery; ordinary requests retain the existing recovery flow.
+
+Each application keeps separate confirmation records in the PHP session, keyed by random identifiers, so opening
+another email link in a second tab does not replace the first tab's target. The limit of **10 pending confirmations
+per application and session** is a deliberate bound on session storage, not an existing authentication limit;
+expired records are removed when confirmation state is accessed, and the oldest record is evicted when adding an
+eleventh. Eviction does not invalidate the email token: reopen the link to prepare another confirmation.
+After successful login or switching, all pending confirmations for that application and session are cleared.
+
+Email tokens retain their existing **15-minute lifetime from creation**. Opening or reloading a confirmation page
+does not restart that clock; a link opened after 14 minutes has approximately one minute left to confirm.
+The server rechecks token validity and target identity on confirmation, and concurrent confirmations can succeed only once.
+The raw email token stays in server-side session state and is not returned in model parameters or HTML.
+Confirmation responses use `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, and framing protection.
+The original email URL still contains a bearer token; configure infrastructure logs and diagnostics accordingly.
+This prevents consumption by scanners that only fetch links, but cannot guarantee protection against a scanner
+that also submits the confirmation form with its cookies and CSRF token.
+
+The bundled `user-control.latte` includes the overridable `login-confirmation.latte` and hides the ordinary email
+and social login forms during confirmation. Applications overriding `user-control.latte` must adopt that branch;
+applications rendering the model themselves must support `showLoginConfirmation`, `currentEmail`, `targetEmail`,
+`loginConfirmationId`, and `loginConfirmationUrl`, alongside the existing framework-provided `csrfToken`.
+
+**Upgrade requirement for application templates:** updating the library does not update an application's own
+`user-control.latte`. Template inheritance prefers that override and does not fall back to the bundled confirmation
+page merely because the override lacks the new branch. During confirmation the model returns `showLogin = false`,
+`showLogout = false`, and an empty `message`. An unchanged copy of the old template therefore renders an empty login
+area, although the surrounding page layout may still appear; other custom templates may show their own content.
+The signed-out user cannot complete email login, and a signed-in user cannot confirm switching to another account.
+The token remains unused and keeps its original expiration time; the existing account stays signed in.
+Links for the already signed-in account still redirect directly, because that case needs no confirmation page.
+
+Before deploying the upgrade, wrap the existing application login controls in the same conditional as the bundled
+template, keeping their current content in the `else` branch:
+
+```latte
+{if isset($showLoginConfirmation) && $showLoginConfirmation}
+    {include 'inherite.latte', latte => 'login-confirmation.latte'}
+{else}
+    {* Keep the application's existing login controls here. *}
+{/if}
+```
+
+The form posts `loginConfirmation`, `loginAction` (`confirm` or `cancel`), and `csrfToken` to `loginConfirmationUrl`.
+The identifier alone cannot authorize login: the matching PHP session and a valid CSRF token are also required.
+Turnstile continues to protect requests to send a login email, not confirmation of an existing email link.
+
+For direct library consumers, `IdentityManager::getIdentityForEmailToken()` inspects a valid token without side effects
+and returns `userId`, `email`, and `expiresAt` (Unix time), or null. `loginWithEmailToken()` consumes it and logs in,
+optionally checking an expected user ID; it owns its database transaction and must not run inside another transaction.
+Direct callers must enforce consent, CSRF protection, and PHP session ID renewal themselves.
+The legacy `isTokenValid()` method remains compatible but **consumes the token and logs in**; it is not an inspection API.
 
 ### View
 
@@ -265,6 +349,11 @@ Tracy's file logger). Tokens, secret keys, raw responses and exception messages 
 ## Testing
 
 Run `.\vendor\bin\phpunit` on Windows for essential PHPUnit tests. From Git Bash, [./test.sh](./test.sh) also prepares the testing database migration before running PHPUnit.
+
+The transaction regression tests create isolated, randomly prefixed copies of the authentication tables in the
+configured `testing` database and drop them afterwards. The test database account needs `CREATE`, `ALTER`, and `DROP`
+permissions in addition to normal data access. The concurrency test uses two PHP CLI processes through `proc_open()`
+and is skipped if that function is unavailable. Do not point the testing environment at a production database.
 
 - create token and use it,
 - check its disappearance as it's valid only once,

@@ -1,0 +1,15 @@
+{if $currentEmail !== null}
+    <h2>Přepnutí účtu</h2>
+    <p>Jste přihlášeni jako {$currentEmail}.</p>
+    <p>Otevřeli jste přihlašovací odkaz pro {$targetEmail}.</p>
+    <p>Chcete se přepnout na tento účet?</p>
+{else}
+    <h2>Potvrzení přihlášení</h2>
+    <p>Přihlásit se jako {$targetEmail}?</p>
+{/if}
+<form method="POST" action="{$loginConfirmationUrl}">
+    <input type="hidden" name="csrfToken" value="{$csrfToken}">
+    <input type="hidden" name="loginConfirmation" value="{$loginConfirmationId}">
+    <button type="submit" name="loginAction" value="confirm">{if $currentEmail !== null}Přepnout na {$targetEmail}{else}Přihlásit se{/if}</button>
+    <button type="submit" name="loginAction" value="cancel">{if $currentEmail !== null}Zůstat přihlášen{else}Zrušit{/if}</button>
+</form>

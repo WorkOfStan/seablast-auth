@@ -60,8 +60,10 @@ Do not modify Composer itself and do not run `composer self-update`.
 ## Local Setup
 
 - DB-backed tests expect a working local MySQL test database configured through `conf/phinx.local.php`.
+- Transaction tests create isolated fixture tables and require CREATE/ALTER/DROP; concurrency tests use `proc_open()`.
 - `conf/phinx.local.php` is local/private and should not be committed.
 - Migrations for consumers live in `conf/db/migrations`.
+- Auth tables require InnoDB for foreign keys and transactional email-token login/account switching.
 - Do not inspect, lint, or recurse into `.tmp`, `vendor`, or build artifacts unless a task specifically requires it.
 
 ## Security Expectations
@@ -70,4 +72,7 @@ Do not modify Composer itself and do not run `composer self-update`.
 - Use `random_bytes()`-based tokens for login/session/Remember Me tokens.
 - Remember Me cookies must be HTTPS-only and HttpOnly.
 - `AuthConstant::FLAG_REMEMBER_ME_COOKIE` controls Remember Me creation and reading in bundled models.
+- Email-link GET/HEAD requests must not consume tokens; confirmation requires a session-bound, CSRF-protected POST.
+- Never return raw email tokens in model parameters; the framework may log those parameters.
+- Keep token consumption and browser-token replacement in one transaction, publishing session/cookies only after commit.
 - Social-login validation must check provider audience/client ID, issuer, email, and expiration where available.

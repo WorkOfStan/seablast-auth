@@ -17,20 +17,22 @@ use Tracy\ILogger;
 use Webmozart\Assert\Assert;
 
 /**
- * 0) If authenticated, listen to logout
+ * 0) Handle email-link confirmation before the ordinary authenticated page or logout.
  * A) If model is invoked with a token as GET parameter, then
- *     a) if token is valid, create session and forward user where they were heading
+ *     a) if token is valid, prepare confirmation without consuming it
  *     b) if token is invalid, show login form
  * B) auto relogin if remember me cookie fits database
  * C) If model is invoked with POST parameters email & valid CSRF token => send email with token
  *    Registration & re-login may get different wording
- *    The email token is then processed in step A)
+ *    The email token is inspected in step A), and consumed only by a CSRF-protected confirmation POST.
  * D) Show login form to be processed in C)
  */
 class UserModel implements SeablastModelInterface
 {
     use \Nette\SmartObject;
 
+    private const CONFIRMATION_LIMIT = 10;
+    private const CONFIRMATION_PARAMETER = 'loginConfirmation';
     private const RETURN_URL_PARAMETER = 'returnUrl';
     private const TOKEN_PARAMETER = 'token';
 
@@ -75,6 +77,40 @@ class UserModel implements SeablastModelInterface
     }
 
     /**
+     * Exchanges an email-link token for a session-bound confirmation URL without consuming it.
+     */
+    private function beginLoginConfirmation(bool $authenticated): stdClass
+    {
+        $token = $this->superglobals->get[self::TOKEN_PARAMETER];
+        $identity = is_string($token) && $token !== '' ? $this->user->getIdentityForEmailToken($token) : null;
+        if ($identity === null) {
+            return $this->loginError($authenticated);
+        }
+        $redirectUrl = $this->getPostLoginRedirectUrl();
+        if ($authenticated && $this->user->getUserId() === $identity['userId']) {
+            return (object) ['redirectionUrl' => $redirectUrl, 'httpCode' => 303];
+        }
+        $confirmations = $this->getLoginConfirmations();
+        while (count($confirmations) >= self::CONFIRMATION_LIMIT) {
+            array_shift($confirmations);
+        }
+        $id = bin2hex(random_bytes(16));
+        $confirmations[$id] = [
+            'token' => $token,
+            'userId' => $identity['userId'],
+            'email' => $identity['email'],
+            'expiresAt' => $identity['expiresAt'],
+            'sourceUserId' => $authenticated ? $this->user->getUserId() : null,
+            'redirectUrl' => $redirectUrl,
+        ];
+        $_SESSION[$this->getConfirmationSessionKey()] = $confirmations;
+        return (object) [
+            'redirectionUrl' => $this->getAbsoluteUserUrl() . '?' . self::CONFIRMATION_PARAMETER . '=' . $id,
+            'httpCode' => 303,
+        ];
+    }
+
+    /**
      * Builds an email login URL carrying a safe, app-relative return target.
      *
      * @param string $token
@@ -90,6 +126,16 @@ class UserModel implements SeablastModelInterface
     }
 
     /**
+     * Discards one confirmation without touching its email token or other tabs.
+     */
+    private function discardLoginConfirmation(string $id): void
+    {
+        $confirmations = $this->getLoginConfirmations();
+        unset($confirmations[$id]);
+        $_SESSION[$this->getConfirmationSessionKey()] = $confirmations;
+    }
+
+    /**
      * Returns the absolute user URL, optionally with the conventional trailing slash used by login links.
      *
      * @param bool $trailingSlash
@@ -100,6 +146,14 @@ class UserModel implements SeablastModelInterface
         $userUrl = rtrim($this->configuration->getString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL), '/')
             . $this->getUserRoute();
         return $trailingSlash && $this->getUserRoute() !== '/' ? $userUrl . '/' : $userUrl;
+    }
+
+    /**
+     * Separates confirmation state between applications sharing a PHP session.
+     */
+    private function getConfirmationSessionKey(): string
+    {
+        return 'sbAuthConfirmations:' . hash('sha256', $this->getAbsoluteUserUrl(false));
     }
 
     /**
@@ -158,6 +212,30 @@ class UserModel implements SeablastModelInterface
     }
 
     /**
+     * Returns live confirmations in insertion order; expiry is the original token expiry.
+     *
+     * @return array<string, array{
+     *     token: string, userId: int, email: string, expiresAt: int, sourceUserId: int|null, redirectUrl: string
+     * }>
+     */
+    private function getLoginConfirmations(): array
+    {
+        $key = $this->getConfirmationSessionKey();
+        /** @var array<string, array{
+         *     token: string, userId: int, email: string, expiresAt: int, sourceUserId: int|null, redirectUrl: string
+         * }> $confirmations
+         */
+        $confirmations = $_SESSION[$key] ?? [];
+        foreach ($confirmations as $id => $confirmation) {
+            if ($confirmation['expiresAt'] <= time()) {
+                unset($confirmations[$id]);
+            }
+        }
+        $_SESSION[$key] = $confirmations;
+        return $confirmations;
+    }
+
+    /**
      * Returns the safe absolute URL to visit after a successful email-token login.
      *
      * @return string
@@ -208,7 +286,25 @@ class UserModel implements SeablastModelInterface
      */
     public function knowledge(): stdClass
     {
-        if ($this->user->isAuthenticated()) {
+        $method = $this->superglobals->server['REQUEST_METHOD'] ?? '';
+        if ($method === 'HEAD') {
+            $this->sendConfirmationHeaders();
+            return (object) ['showLogin' => false, 'showLogout' => false, 'message' => ''];
+        }
+        $authenticated = $this->user->isAuthenticated();
+        if (
+            ($method === 'GET' && (array_key_exists(self::TOKEN_PARAMETER, $this->superglobals->get)
+                || array_key_exists(self::CONFIRMATION_PARAMETER, $this->superglobals->get)))
+            || ($method === 'POST' && (array_key_exists('loginAction', $this->superglobals->post)
+                || array_key_exists(self::CONFIRMATION_PARAMETER, $this->superglobals->post)))
+        ) {
+            $this->sendConfirmationHeaders();
+            if ($method === 'GET' && array_key_exists(self::TOKEN_PARAMETER, $this->superglobals->get)) {
+                return $this->beginLoginConfirmation($authenticated);
+            }
+            return $this->processLoginConfirmation($authenticated, $method === 'POST');
+        }
+        if ($authenticated) {
             if (isset($this->superglobals->get['logout'])) {
                 $this->user->logout();
                 return (object) [
@@ -224,28 +320,6 @@ class UserModel implements SeablastModelInterface
             ];
         }
         if ($this->superglobals->server['REQUEST_METHOD'] === 'GET') {
-            if (isset($this->superglobals->get['token'])) {
-                Assert::string($this->superglobals->get['token']);
-                if ($this->user->isTokenValid($this->superglobals->get['token'])) {
-                    // This answer wouldn't show the menu for authenticated users
-                    //return (object) [
-                    //    'showLogin' => false,
-                    //    'showLogout' => true,
-                    //    'message' => 'Právě jste se přihlásili jako ' . $this->user->getEmail() . ', užijte si to.'
-                    //    . ' <a href="../content-root">Moje kroniky</a>', // HTML is displayed escaped
-                    //];
-                    // ... so refresh the page ;-)
-                    return (object) [
-                            'redirectionUrl' => $this->getPostLoginRedirectUrl(),
-                            'httpCode' => 303,
-                    ];
-                }
-                return (object) [
-                        'showLogin' => true,
-                        'showLogout' => false,
-                        'message' => 'Invalid token.',
-                ];
-            }
             // auto re-login attempt if Remember me cookie allowed
             if (
                 $this->configuration->flag->status(AuthConstant::FLAG_REMEMBER_ME_COOKIE) &&
@@ -336,6 +410,88 @@ class UserModel implements SeablastModelInterface
     }
 
     /**
+     * Shows a generic error while preserving any existing authentication.
+     */
+    private function loginError(bool $authenticated, string $message = ''): stdClass
+    {
+        return (object) [
+            'showLogin' => !$authenticated,
+            'showLogout' => $authenticated,
+            'message' => $message !== '' ? $message
+                : 'Přihlašovací odkaz je neplatný nebo vypršel. Vyžádejte si nový odkaz.',
+        ];
+    }
+
+    /**
+     * Renders or explicitly confirms the account shown when the email link was opened.
+     */
+    private function processLoginConfirmation(bool $authenticated, bool $post): stdClass
+    {
+        $input = $post ? $this->superglobals->post : $this->superglobals->get;
+        $id = $input[self::CONFIRMATION_PARAMETER] ?? null;
+        $confirmations = $this->getLoginConfirmations();
+        $confirmation = is_string($id) ? ($confirmations[$id] ?? null) : null;
+        if ($confirmation === null) {
+            return $this->loginError($authenticated);
+        }
+        if ($confirmation['sourceUserId'] !== ($authenticated ? $this->user->getUserId() : null)) {
+            $this->discardLoginConfirmation($id);
+            return $this->loginError($authenticated, 'Přihlášený účet se změnil. Otevřete přihlašovací odkaz znovu.');
+        }
+        if ($post) {
+            $action = $input['loginAction'] ?? null;
+            if (!$this->hasValidCsrfToken() || !in_array($action, ['confirm', 'cancel'], true)) {
+                return $this->loginError($authenticated, 'Potvrzení se nezdařilo. Otevřete přihlašovací odkaz znovu.');
+            }
+            if ($action === 'cancel') {
+                $this->discardLoginConfirmation($id);
+                return (object) ['redirectionUrl' => $this->getAbsoluteUserUrl(false), 'httpCode' => 303];
+            }
+        }
+        $identity = $this->user->getIdentityForEmailToken($confirmation['token']);
+        if ($identity === null || $identity['userId'] !== $confirmation['userId']) {
+            $this->discardLoginConfirmation($id);
+            return $this->loginError($authenticated);
+        }
+        if (!$post) {
+            return (object) [
+                'showLogin' => false,
+                'showLogout' => false,
+                'message' => '',
+                'showLoginConfirmation' => true,
+                'currentEmail' => $authenticated ? $this->user->getEmail() : null,
+                'targetEmail' => $identity['email'],
+                'loginConfirmationId' => $id,
+                'loginConfirmationUrl' => $this->getAbsoluteUserUrl(false),
+            ];
+        }
+        if (session_status() !== PHP_SESSION_ACTIVE || !session_regenerate_id(true)) {
+            return $this->loginError($authenticated, 'Přihlášení se nezdařilo. Zkuste to prosím znovu.');
+        }
+        try {
+            if (!$this->user->loginWithEmailToken($confirmation['token'], $confirmation['userId'])) {
+                $this->discardLoginConfirmation($id);
+                return $this->loginError($authenticated);
+            }
+        } catch (\Throwable $exception) {
+            // Exception messages can contain database details; log only the failure category.
+            Debugger::log('Email login confirmation failed: ' . get_class($exception), ILogger::ERROR);
+            return $this->loginError($authenticated, 'Přihlášení se nezdařilo. Zkuste to prosím znovu.');
+        }
+        unset($_SESSION[$this->getConfirmationSessionKey()]);
+        (new CsrfTokenManager())->removeToken('sb_json');
+        // This answer wouldn't show the menu for authenticated users
+        //return (object) [
+        //    'showLogin' => false,
+        //    'showLogout' => true,
+        //    'message' => 'Právě jste se přihlásili jako ' . $this->user->getEmail() . ', užijte si to.'
+        //    . ' <a href="../content-root">Moje kroniky</a>', // HTML is displayed escaped
+        //];
+        // ... so refresh the page ;-)
+        return (object) ['redirectionUrl' => $confirmation['redirectUrl'], 'httpCode' => 303];
+    }
+
+    /**
      * Validates and normalizes an app-relative return target.
      *
      * @param string $returnUrl
@@ -388,9 +544,20 @@ class UserModel implements SeablastModelInterface
         if (isset($parts['query'])) {
             parse_str($parts['query'], $query);
         }
-        unset($query[self::TOKEN_PARAMETER], $query[self::RETURN_URL_PARAMETER]);
+        unset($query[self::TOKEN_PARAMETER], $query[self::RETURN_URL_PARAMETER], $query[self::CONFIRMATION_PARAMETER]);
         $queryString = http_build_query($query, '', '&', PHP_QUERY_RFC3986);
         return $parts['path'] . ($queryString === '' ? '' : '?' . $queryString);
+    }
+
+    /**
+     * Keeps confirmation pages private and prevents referrer leakage and framing.
+     */
+    private function sendConfirmationHeaders(): void
+    {
+        header('Cache-Control: no-store');
+        header('Referrer-Policy: no-referrer');
+        header('X-Frame-Options: DENY');
+        header("Content-Security-Policy: frame-ancestors 'none'", false);
     }
 
     /**

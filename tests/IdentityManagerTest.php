@@ -50,7 +50,7 @@ class IdentityManagerTest extends TestCase
             // If an exception is thrown, it means there was an error
             //$this->fail('SQL injection attempt caused an exception: ' . $e->getMessage() . ' - ' . get_class($e));
             // There should be an exception if $sqlInjectionString is not a valid email
-            $this->assertNotSame($invalidEmailString, filter_var($invalidEmailString, FILTER_VALIDATE_EMAIL));
+            $this->assertFalse(filter_var($invalidEmailString, FILTER_VALIDATE_EMAIL));
         }
     }
 

@@ -1,3 +1,6 @@
+{if isset($showLoginConfirmation) && $showLoginConfirmation}
+    {include 'inherite.latte', latte => 'login-confirmation.latte'}
+{else}
 <div>
   {include 'inherite.latte', latte => 'login-form.latte'}
 </div>
@@ -18,4 +21,5 @@
     {include 'inherite.latte', latte => 'login-social-google-script.latte'}
     {/if}
     {include 'inherite.latte', latte => 'login-social-common-script.latte'}
+{/if}
 {/if}

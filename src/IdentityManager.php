@@ -111,36 +111,12 @@ class IdentityManager implements IdentityManagerInterface
      */
     private function createSessionId(int $userId): void
     {
-        // Insert a short-lived session token and, when enabled over HTTPS, a long-lived Remember Me token.
-        $sessionId = $this->generateToken();
-        $values = [
-            "(" . (int) $userId . ", '" . $this->escapeTokenHash($sessionId) . "', CURRENT_TIMESTAMP)"
-        ];
-        $rememberMeToken = null;
-        $shouldCreateRememberMe = $this->rememberMeCookieEnabled && $this->isHttps($_SERVER);
-        if ($shouldCreateRememberMe) {
-            $rememberMeToken = $this->generateToken();
-            $values[] = "(" . (int) $userId . ", '" . $this->escapeTokenHash($rememberMeToken)
-                . "', CURRENT_TIMESTAMP)";
-        }
-        $this->executeWriteQuery(
-            "INSERT INTO `{$this->tablePrefix}session_user` (user_id, token, updated) VALUES "
-            . implode(', ', $values) . ";"
-        );
-        $_SESSION['sbSessionToken'] = $sessionId;
-        // Create a long-lived relogin cookie which expires in 30 days (only for HTTPS)
-        if ($rememberMeToken !== null) {
-            $this->setCookie(
-                $rememberMeToken,
-                time() + 30 * 24 * 60 * 60 // expire time: days * hours * minutes * seconds
-            );
-        } elseif (!$this->rememberMeCookieEnabled) {
-            Debugger::barDump('sbRememberMe cookie disabled');
-        } else {
-            Debugger::barDump('http => no sbRememberMe cookie');
-        }
+        $this->publishSessionTokens($this->insertSessionTokens($userId));
     }
 
+    /**
+     * Deletes a browser's authentication token without affecting its other devices.
+     */
     private function deleteSessionToken(string $token): void
     {
         $this->executeWriteQuery(
@@ -206,6 +182,22 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
+     * Reads a valid email token, optionally locking it until the transaction ends.
+     *
+     * @return array<?scalar>|null
+     */
+    private function fetchEmailToken(string $token, bool $lock = false): ?array
+    {
+        return $this->fetchFirstRow(
+            "SELECT et.id, u.id AS user_id, u.email, u.role_id, UNIX_TIMESTAMP(et.created) + 900 AS expires_at"
+            . " FROM `{$this->tablePrefix}email_token` et"
+            . " JOIN `{$this->tablePrefix}users` u ON u.email = et.email"
+            . " WHERE et.token = '" . $this->escapeTokenHash($token) . "'"
+            . " AND et.created > (NOW() - INTERVAL 15 MINUTE) LIMIT 1" . ($lock ? ' FOR UPDATE' : '')
+        );
+    }
+
+    /**
      * Fetches the first row of a query result.
      *
      * TODO add ORDER BY to queries, and as there is a LIMIT 1, replace this method with queryStrict.
@@ -266,6 +258,21 @@ class IdentityManager implements IdentityManagerInterface
     {
         $groups = new GroupManager($this->mysqli, $this->userId, $this->tablePrefix);
         return $groups->getGroupsByUserId();
+    }
+
+    /**
+     * Inspects an email login token without consuming it or changing authentication state.
+     *
+     * @return array{userId: int, email: string, expiresAt: int}|null
+     */
+    public function getIdentityForEmailToken(string $token): ?array
+    {
+        $row = $this->fetchEmailToken($token);
+        return $row === null ? null : [
+            'userId' => (int) $row['user_id'],
+            'email' => (string) $row['email'],
+            'expiresAt' => (int) $row['expires_at'],
+        ];
     }
 
     /**
@@ -350,6 +357,32 @@ class IdentityManager implements IdentityManagerInterface
     private function hashToken(string $token): string
     {
         return hash(self::TOKEN_HASH_ALGORITHM, $token);
+    }
+
+    /**
+     * Inserts authentication tokens without changing the PHP session or browser cookies.
+     *
+     * @return array{sessionToken: string, rememberMeToken: string|null}
+     */
+    private function insertSessionTokens(int $userId): array
+    {
+        // Insert a short-lived session token and, when enabled over HTTPS, a long-lived Remember Me token.
+        $sessionId = $this->generateToken();
+        $values = [
+            "(" . (int) $userId . ", '" . $this->escapeTokenHash($sessionId) . "', CURRENT_TIMESTAMP)"
+        ];
+        $rememberMeToken = null;
+        $shouldCreateRememberMe = $this->rememberMeCookieEnabled && $this->isHttps($_SERVER);
+        if ($shouldCreateRememberMe) {
+            $rememberMeToken = $this->generateToken();
+            $values[] = "(" . (int) $userId . ", '" . $this->escapeTokenHash($rememberMeToken)
+                . "', CURRENT_TIMESTAMP)";
+        }
+        $this->executeWriteQuery(
+            "INSERT INTO `{$this->tablePrefix}session_user` (user_id, token, updated) VALUES "
+            . implode(', ', $values) . ";"
+        );
+        return ['sessionToken' => $sessionId, 'rememberMeToken' => $rememberMeToken];
     }
 
     /**
@@ -451,7 +484,8 @@ class IdentityManager implements IdentityManagerInterface
     }
 
     /**
-     * Validates an email token and populates user data upon success.
+     * Consumes an email token and logs in; retained for backwards compatibility.
+     * Use getIdentityForEmailToken() for inspection without side effects.
      *
      * ?? Check for sessionToken as well to force login to the same environment.
      *
@@ -460,26 +494,7 @@ class IdentityManager implements IdentityManagerInterface
      */
     public function isTokenValid(string $emailToken): bool
     {
-        $emailTokenHashEscaped = $this->escapeTokenHash($emailToken);
-        $row = $this->fetchFirstRow(
-            "SELECT id, email FROM `{$this->tablePrefix}email_token` WHERE token = '" . $emailTokenHashEscaped
-            . "' AND created > (NOW() - INTERVAL 15 MINUTE) LIMIT 1;"
-        );
-        if (is_null($row)) {
-            return false;
-        }
-        // Token is one time only
-        $this->executeWriteQuery(
-            "DELETE FROM `{$this->tablePrefix}email_token` WHERE id = " . (int) $row['id'] . ";"
-        );
-         // Update last_access
-        $this->executeWriteQuery(
-            "UPDATE `{$this->tablePrefix}users` SET last_login = CURRENT_TIMESTAMP WHERE email = '"
-            . $this->mysqli->real_escape_string((string) $row['email']) . "';"
-        );
-
-        $this->populateUserByEmail((string) $row['email']);
-        return true;
+        return $this->loginWithEmailToken($emailToken);
     }
 
     /**
@@ -499,6 +514,52 @@ class IdentityManager implements IdentityManagerInterface
             . $this->mysqli->real_escape_string($email) . "', '" . $this->escapeTokenHash($token)
             . "', CURRENT_TIMESTAMP);");
         return $token;
+    }
+
+    /**
+     * Atomically consumes a token and replaces only this browser's authentication.
+     * Requires InnoDB tables and owns the database transaction.
+     * The caller must enforce user consent, CSRF protection and PHP session ID renewal.
+     */
+    public function loginWithEmailToken(string $token, ?int $expectedUserId = null): bool
+    {
+        $this->executeWriteQuery('START TRANSACTION');
+        try {
+            $row = $this->fetchEmailToken($token, true);
+            if ($row === null || ($expectedUserId !== null && (int) $row['user_id'] !== $expectedUserId)) {
+                $this->executeWriteQuery('ROLLBACK');
+                return false;
+            }
+            // Token is one time only, including requests from different PHP sessions.
+            $this->executeWriteQuery(
+                "DELETE FROM `{$this->tablePrefix}email_token` WHERE id = " . (int) $row['id']
+                . " AND created > (NOW() - INTERVAL 15 MINUTE)"
+            );
+            if ($this->mysqli->affected_rows !== 1) {
+                $this->executeWriteQuery('ROLLBACK');
+                return false;
+            }
+            // Update last_access by recording the successful login in the same transaction.
+            $this->executeWriteQuery(
+                "UPDATE `{$this->tablePrefix}users` SET last_login = CURRENT_TIMESTAMP WHERE id = "
+                . (int) $row['user_id']
+            );
+            $tokens = $this->insertSessionTokens((int) $row['user_id']);
+            foreach ([$_SESSION['sbSessionToken'] ?? null, $_COOKIE['sbRememberMe'] ?? null] as $oldToken) {
+                if (is_string($oldToken)) {
+                    $this->deleteSessionToken($oldToken);
+                }
+            }
+            $this->executeWriteQuery('COMMIT');
+        } catch (\Throwable $exception) {
+            $this->executeWriteQuery('ROLLBACK');
+            throw $exception;
+        }
+        $this->email = (string) $row['email'];
+        $this->roleId = (int) $row['role_id'];
+        $this->userId = (int) $row['user_id'];
+        $this->publishSessionTokens($tokens, true);
+        return true;
     }
 
     /**
@@ -591,6 +652,31 @@ class IdentityManager implements IdentityManagerInterface
         Debugger::barDump(['email' => $this->email, 'roleId' => $this->roleId, 'userId' => $this->userId], 'User');
         //$this->dbms->query("UPDATE `{$this->tablePrefix}users` SET last_access = CURRENT_TIMESTAMP
         // WHERE email = '{$this->email}'");
+    }
+
+    /**
+     * Publishes tokens only after their database transaction has committed.
+     *
+     * @param array{sessionToken: string, rememberMeToken: string|null} $tokens
+     */
+    private function publishSessionTokens(array $tokens, bool $clearOldRememberMe = false): void
+    {
+        $_SESSION['sbSessionToken'] = $tokens['sessionToken'];
+        $rememberMeToken = $tokens['rememberMeToken'];
+        // Create a long-lived relogin cookie which expires in 30 days (only for HTTPS)
+        if ($rememberMeToken !== null) {
+            $this->setCookie(
+                $rememberMeToken,
+                time() + 30 * 24 * 60 * 60 // expire time: days * hours * minutes * seconds
+            );
+        } elseif (!$this->rememberMeCookieEnabled) {
+            Debugger::barDump('sbRememberMe cookie disabled');
+        } else {
+            Debugger::barDump('http => no sbRememberMe cookie');
+        }
+        if ($clearOldRememberMe && $rememberMeToken === null && isset($_COOKIE['sbRememberMe'])) {
+            $this->setCookie('', time() - 3600);
+        }
     }
 
     /**

@@ -49,12 +49,14 @@ class EmailLoginConfirmationTest extends TestCase
         $configuration = new SeablastConfiguration();
         $configuration->setString(SeablastConstant::SB_APP_ROOT_ABSOLUTE_URL, 'https://example.test/app');
         $model = (new ReflectionClass(UserModel::class))->newInstanceWithoutConstructor();
-        foreach ([
+        foreach (
+            [
             'configuration' => $configuration,
             'superglobals' => new Superglobals($get, $post, ['REQUEST_METHOD' => $post === [] ? 'GET' : 'POST']),
             'user' => $identity,
             'userRoute' => '/user',
-        ] as $name => $value) {
+            ] as $name => $value
+        ) {
             $property = new ReflectionProperty(UserModel::class, $name);
             $property->setAccessible(true);
             $property->setValue($model, $value);
@@ -301,13 +303,15 @@ class EmailLoginConfirmationTest extends TestCase
         $identity->expects($this->never())->method('loginWithEmailToken');
         $id = $this->openConfirmation($identity);
         $csrf = (new CsrfTokenManager())->getToken('sb_json')->getValue();
-        foreach ([
+        foreach (
+            [
             ['loginConfirmation' => $id, 'loginAction' => 'confirm'],
             ['loginConfirmation' => $id, 'loginAction' => 'cancel', 'csrfToken' => 'wrong'],
             ['loginConfirmation' => $id, 'loginAction' => ['confirm'], 'csrfToken' => $csrf],
             ['loginConfirmation' => [$id], 'loginAction' => 'confirm', 'csrfToken' => $csrf],
             ['loginConfirmation' => 'unknown', 'loginAction' => 'confirm', 'csrfToken' => $csrf],
-        ] as $post) {
+            ] as $post
+        ) {
             $result = $this->createModel($identity, [], $post)->knowledge();
             $this->assertTrue($result->showLogout);
             $this->assertFalse(isset($result->redirectionUrl));

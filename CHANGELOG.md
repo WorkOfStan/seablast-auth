@@ -34,6 +34,10 @@ feat(user-control.latte)!: Require explicit email-login confirmation
 
 - Add a session-bound confirmation template and a side-effect-free email-token identity lookup.
 
+### Fixed
+
+- Narrow the email-login confirmation ID to a string before passing it to confirmation cleanup methods.
+
 ### Security
 
 - Consume email tokens only after CSRF-protected confirmation in the bundled model and serialize consumption in InnoDB.

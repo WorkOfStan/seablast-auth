@@ -431,7 +431,7 @@ class UserModel implements SeablastModelInterface
         $id = $input[self::CONFIRMATION_PARAMETER] ?? null;
         $confirmations = $this->getLoginConfirmations();
         $confirmation = is_string($id) ? ($confirmations[$id] ?? null) : null;
-        if ($confirmation === null) {
+        if (!is_string($id) || $confirmation === null) {
             return $this->loginError($authenticated);
         }
         if ($confirmation['sourceUserId'] !== ($authenticated ? $this->user->getUserId() : null)) {

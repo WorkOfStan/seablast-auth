@@ -158,7 +158,7 @@ The browser is redirected with HTTP 303 to a session-bound confirmation URL with
 The confirmation works without JavaScript and requires an explicit POST with a valid session CSRF token:
 
 - A signed-out user sees the target email and **Přihlásit se** / **Zrušit** buttons.
-- A user signed in as A who opens a link for B sees **Přepnutí účtu**, both email addresses, and **Přepnout na bob@example.com** / **Zůstat přihlášen** buttons. The target email is used instead of guessing a name.
+- A user signed in as A who opens a link for B sees **Přepnutí účtu**, both email addresses, and **Přepnout na <bob@example.com>** / **Zůstat přihlášen** buttons. The target email is used instead of guessing a name.
 - A user already signed in as the link's account continues directly to the safe `returnUrl`, without consuming the token or requiring confirmation.
 - **Zůstat přihlášen** and **Zrušit** discard only that browser confirmation and return to the configured user route (normally `/user`), without consuming the email token or changing the signed-in account.
 
